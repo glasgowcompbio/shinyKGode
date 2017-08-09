@@ -4,7 +4,7 @@ library(ggplot2)
 library(reshape2)
 library(libSBML)
 
-source('../scripts/rkhs_gradmatch_wrapper.r')
+source('scripts/rkhs_gradmatch_wrapper.r')
 
 SEED = 19537
 set.seed(SEED)
@@ -168,19 +168,34 @@ shinyServer(function(input, output, session) {
     observeEvent(input$generateBtn, {
 
         res = generateData()
+        sbml = parseSBML()
         
-        time = res$time
+        t = res$time
         y_no = res$y_no
         updateTabsetPanel(session, "inTabset", selected="results")
         output$resultsType = renderText({ "Generated data:" })
         output$resultsPlot = renderPlot({
-            df = data.frame(y_no)
-            df$time = time
-            df_plot = melt(df, id.vars='time', variable.name='states')
-            ggplot(aes(y=value, x=time, colour=states), data=df_plot) + geom_point(size=2) + 
-                theme_bw() +
-                theme(text = element_text(size=20))
+            
+            plot_df = data.frame(y_no)
+            plot_df$time = t
+            plot_df = melt(plot_df, id.vars='time', variable.name='state')
+            
+            pp = list()
+            for (i in 1:ncol(y_no)) {
+                
+                species = sbml$species[i]
+                title = paste('State', species, sep=' ')
+                pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
+                    geom_point(data=subset(plot_df, state==species), color="red") + 
+                    ggtitle(title) + 
+                    theme_bw() + theme(text = element_text(size=20))
+
+            }
+            do.call(grid.arrange, pp)
+            
         })    
+        
+        
         shinyjs::enable("inferBtn")
         
         shinyjs::show("downloadDataBtn")
@@ -236,13 +251,6 @@ shinyServer(function(input, output, session) {
         
         output$resultsPlot = renderPlot({
 
-            # plot each state separately
-            # plots = list()
-            # data = data.frame(t=kkk$t, resb1=resb1$pred, resb2=resb2$pred)
-            # plots[[1]] = ggplot(data=data,aes(x=t, y=resb1)) + geom_line()
-            # plots[[2]] = ggplot(data=data,aes(x=t, y=resb2)) + geom_line()
-            # do.call(grid.arrange, plots)
-            
             # plot them together -- THIS ISN'T WHAT WE WANT
             # y = c(resb1$pred, resb2$pred)
             # plot_df = data.frame(t(intp))
@@ -252,18 +260,29 @@ shinyServer(function(input, output, session) {
             #     theme_bw() +
             #     theme(text = element_text(size=20))
 
-            # this should be the final code?
-            # plots = list()
-            # un = unique(plot_df[['states']])
-            # for (i in 1:length(un)) {
-            #     sub_df = plot_df[plot_df$states == un[i], ]
-            #     plots[[i]] = ggplot(aes(y=value, x=time, colour=states), data=sub_df) + geom_line(size=1) + 
-            #         theme_bw() +
-            #         theme(text = element_text(size=20))
-            # }
-            # do.call(grid.arrange, plots)
+            res = infer_res$res
+            pp = list()
+            for (i in 1:length(res$bbb)) {
+                
+                time = res$bbb[[i]]$t
+                y = res$bbb[[i]]$y
+                intp = res$intp[i, ]
+                    
+                plot_df = data.frame(time)
+                plot_df$data = y
+                plot_df$interpolated = intp
+                plot_df = melt(plot_df, id.vars='time', variable.name='type')
+                
+                title = paste('State', sbml$species[i], sep=' ')
+                pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
+                    geom_point(data=subset(plot_df, type=='data'), aes(color='data')) + 
+                    geom_line(data=subset(plot_df, type=='interpolated'), aes(color='interpolated')) +
+                    ggtitle(title) + 
+                    theme_bw() + theme(text = element_text(size=20)) + 
+                    scale_colour_manual(name="Legend", values=c(data="red", interpolated="blue"))                    
             
-            
+            }
+            do.call(grid.arrange, pp)
 
         })    
         

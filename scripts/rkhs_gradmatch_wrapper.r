@@ -1,9 +1,9 @@
-source('../rkhs_gradmatch/ode.r')
-source('../rkhs_gradmatch/kernel1.r')
-source('../rkhs_gradmatch/rkhs1.r')
-source('../rkhs_gradmatch/intfun.r')
-source('../rkhs_gradmatch/rk3g1.r')
-source('../rkhs_gradmatch/WarpSin.r')
+source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
+source('/Users/joewandy/git/rkhs_gradmatch/kernel1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkhs1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/intfun.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rk3g1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/WarpSin.r')
 
 library(SBMLR)
 
