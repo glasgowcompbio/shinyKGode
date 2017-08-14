@@ -1,9 +1,14 @@
 ## Biopathway
+library(R6)
+library(deSolve)
+library(pracma)
+library(mvtnorm)
+
 
 noise = 0.017^2 #0.0018^2 #0.052^2
 SEED=19537
+set.seed(SEED)
 
-library(pspline)
 ### define ode 
 BP_fun = function(t, x, par_ode){
   k1 = par_ode[1]
@@ -32,6 +37,8 @@ BP_grlNODE= function(par_ode,grad_ode,y_p,z_p) {
   dres
 } 
 
+#############################################################
+
 M1 <- function(t,inix,par_ode){
   with( as.list(c(inix,par_ode)),{
     dx1 = -par_ode[1]*x1-par_ode[2]*x1*x3+par_ode[3]*x4
@@ -44,9 +51,21 @@ M1 <- function(t,inix,par_ode){
     }
 state = c( x1=1,x2=0,x3=1,x4=0,x5=0 )
 truep = c(0.07,0.6,0.05,0.3,0.017,0.3)
+##############################################################
 
-### generate data
-source('ode.r')
+source('/Users/joewandy/git/rkhs_gradmatch/kernel1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkhs1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rk3g1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
+source('/Users/joewandy/git/rkhs_gradmatch/WarpSin.r')
+
+source('/Users/joewandy/git/rkhs_gradmatch/warpfun.r')
+source('/Users/joewandy/git/rkhs_gradmatch/crossv.r')
+source('/Users/joewandy/git/rkhs_gradmatch/warpInitLen.r')
+source('/Users/joewandy/git/rkhs_gradmatch/third.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkg.r')
+
+##################  generate data, if user want to run the real data just skip this step  #################################### 
 kkk0 = ode$new(1,fun=BP_fun,grfun=BP_grlNODE)
 xinit = as.matrix(c(1,0,1,0,0))
 tinterv = c(0,100)
@@ -55,72 +74,85 @@ kkk0$solve_ode(c(0.07,0.6,0.05,0.3,0.017,0.3),xinit,tinterv)
  select=2
  pick =c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
 
-kkk = ode$new(1,fun=BP_fun,grfun=BP_grlNODE)
-kkk$y_ode = kkk0$y_ode[,pick]
-kkk$t = kkk0$t[pick]
+########################### build the ode objects  #######################################
+init_par = rep(c(0.1),6)
+init_yode = kkk0$y_ode[,pick] ## you can add observation here
+init_t = kkk0$t[pick]  ## you can add the time index for the observation here
+
+# kkk = ode$new(1,fun=BP_fun,grfun=BP_grlNODE,t= init_t,ode_par= init_par, y_ode=init_yode )
+kkk = ode$new(1,fun=BP_fun,t= init_t,ode_par= init_par, y_ode=init_yode )
+
 n_o = max( dim( kkk$y_ode) )
+y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0,0,0,0),noise*diag(5)) ## for real data, we need to let y_no = data where  the row index is the index for states
 
-set.seed(SEED)
-y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0,0,0,0),noise*diag(5))
-nst = 5    ## number of states
-npar = 6   ## number of parameters
 
-############################# parameter inference   ##############################
-source('kernel1.r')
-source('rkhs1.r')
-source('intfun.r')
-source('rk3g1.r')
- 
-
+############################# parameter inference   ############################## 
 ##### standard gradient matching
-ktype='rbf'
-rkgres = rkg(kkk,nst,npar,y_no,ktype)
-bbb = rkgres$bbb
+ktype='rbf' ## there are two options 'rbf' and 'mlp'
+rkgres = rkg(kkk,y_no,ktype) ## do the standard gradiet matching
+bbb = rkgres$bbb   ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
 kkk$ode_par
+#plot(bbb[[1]]$t,rkgres$intp[1,],type='l')              ## plot interpolation with time points for data 
+#plot(kkk0$t,bbb[[1]]$predictT(kkk0$t)$pred,type='l')   ## plot interpolation with denser grids
 
 ############# gradient matching + thrid step
-crtype = '3'
-lambda3 = 1e-5
-res = third(lambda3,kkk,bbb,crtype)
+crtype='i'  ## two methods fro third step  'i' fast method means iterative and '3' for slow method means 3rd step
 
+lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
+lamil1 = crossv(lam,kkk,bbb,crtype,y_no)
+lambdai1=lamil1[[1]]
+
+res = third(lambdai1,kkk,bbb,crtype) ## runing the third step to improve ode parameter estimation 
 oppar = res$oppar
-tail(oppar[[1]],6)
+# plot(res$rk3$rk[[1]]$t,res$rk3$rk[[1]]$predict()$pred,type='l') ## plot interpolation with data grids
+# plot(kkk0$t,res$rk3$rk[[1]]$predictT(kkk0$t)$pred,type='l')  ## plot interpolation with denser grids
+
+## if we want to see the diagnostic, we need to make crtype='3' and we will see the convergence 
+# crtype='3'
+# res = third(lambdai1,kkk,bbb,crtype)
 
 
-########## warp    rkgw 194.683 seconds   rkg  8.849 seconds
-source('WarpSin.r')
+########## warp  
 ###### warp state
-peod = c(200,200,200,200,200) #8#9.7     ## the guessing period
-eps= 20          ## the standard deviation of period
-fixlens=c(4,4,4,4,4)
-www = warpfun(kkk,p0,bbb,eps,fixlens)
+peod = c(200,200,200,200,200)   ## the guessing period for each state  user defined
+eps= 20          ## the standard deviation of period  user defined
+
+#lens=c(3,4,5) ## user can define the init value of lens for sigmoid function. the default is c(3,4,5)
+fixlens=warpInitLen(peod,eps,rkgres) ## find the start value for the warping basis function.
+
+www = warpfun(kkk,p0,bbb,eps,fixlens,kkk$t)
+
 dtilda= www$dtilda
 bbbw = www$bbbw
+resmtest = www$wtime
+wfun=www$wfun
+wkkk = www$wkkk
 
-kkk$ode_par
+wkkk$ode_par
+
+# plot(kkk$t,resmtest[1,],type='l')   ## plotting function
+# plot(resmtest[1,],bbbw[[1]]$predict()$pred,type='l')  ## plot interpolation in warped time domain
+# plot(kkk$t,bbbw[[1]]$predict()$pred,type='l')  ## plot interpolation in warped time domain
+# wgrid = wfun[[1]]$predictT(kkk0$t)$pred ## denser grid in warped domain
+# plot( kkk0$t, bbbw[[1]]$predictT(wgrid)$pred,type='l') ## plot interpolatin with denser grid in original domain
 
 
 ##### 3rd step + warp
 woption='w'
 ####   warp   3rd
-crtype = '3'
+crtype = 'i'
 
-lambdaw3= 1e-5
-res = third(lambdaw3,kkk,bbbw,crtype,woption,dtilda)
+lamwil= crossv(lam,wkkk,bbbw,crtype,y_no,woption,resmtest,dtilda) 
+lambdawi=lamwil[[1]]
+
+res = third(lambdawi,wkkk,bbbw,crtype,woption,dtilda)  ## add third step after warping
 
 oppar = res$oppar  
-tail(oppar[[1]],6)
 
+# plot(res$rk3$rk[[1]]$t,res$rk3$rk[[1]]$predict()$pred,type='l') ## plot interpolation with data grids in warped domain
+# plot(kkk$t,res$rk3$rk[[1]]$predict()$pred,type='l') ## plot interpolation with data grids in original domain
 
-
-
-
-
-
-
-
-
-
-
+# wgrid = wfun[[1]]$predictT(kkk0$t)$pred
+# plot(kkk0$t,res$rk3$rk[[1]]$predictT( wgrid)$pred,type='l')  ## plot interpolation with denser grids in original domain. 
 

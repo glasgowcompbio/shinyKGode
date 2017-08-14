@@ -1,10 +1,20 @@
-source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
 source('/Users/joewandy/git/rkhs_gradmatch/kernel1.r')
 source('/Users/joewandy/git/rkhs_gradmatch/rkhs1.r')
-source('/Users/joewandy/git/rkhs_gradmatch/intfun.r')
 source('/Users/joewandy/git/rkhs_gradmatch/rk3g1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
 source('/Users/joewandy/git/rkhs_gradmatch/WarpSin.r')
 
+source('/Users/joewandy/git/rkhs_gradmatch/warpfun.r')
+source('/Users/joewandy/git/rkhs_gradmatch/crossv.r')
+source('/Users/joewandy/git/rkhs_gradmatch/warpInitLen.r')
+source('/Users/joewandy/git/rkhs_gradmatch/third.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkg.r')
+
+## Biopathway
+library(R6)
+library(deSolve)
+library(pracma)
+library(mvtnorm)
 library(SBMLR)
 
 ### define ode 
@@ -129,29 +139,42 @@ get_initial_values = function(predefined_model) {
     
 }
 
-generate_data_predefined_models = function(predefined_model, xinit, tinterv, numSpecies, paramsVals, noise) {
-    
+generate_data_predefined_models = function(predefined_model, xinit, tinterv, numSpecies, 
+                                           paramsVals, noise, seed=19537) {
+
+    set.seed(SEED)
     if (predefined_model == "lv") {
         
-        kkk = ode$new(numSpecies,fun=LV_fun,grfun=LV_grlNODE)
-        kkk$solve_ode(paramsVals, xinit, tinterv)
-
+        kkk0 = ode$new(2, fun=LV_fun, grfun=LV_grlNODE)
+        kkk0$solve_ode(paramsVals, xinit, tinterv)
+        init_par = rep(c(0.1),4)
+        init_yode = kkk0$y_ode
+        init_t = kkk0$t
+        
+        kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
+        
     } else if (predefined_model == "fhg") {
         
-        kkk = ode$new(numSpecies,fun=FN_fun,grfun=FN_grlNODE)
-        kkk$solve_ode(paramsVals, xinit, tinterv)
-
+        kkk0 = ode$new(numSpecies,fun=FN_fun,grfun=FN_grlNODE)
+        kkk0$solve_ode(paramsVals, xinit, tinterv)
+        init_par = rep(c(0.1),3)
+        init_yode = kkk0$y_ode
+        init_t = kkk0$t
+        
+        kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
+        
     } else if (predefined_model == 'bp') {
         
-        kkk0 = ode$new(1,fun=BP_fun,grfun=BP_grlNODE)
+        kkk0 = ode$new(1, fun=BP_fun, grfun=BP_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
         start = 6
         select = 2
         pick = c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
         
-        kkk = ode$new(1,fun=BP_fun,grfun=BP_grlNODE)
-        kkk$y_ode = kkk0$y_ode[,pick]
-        kkk$t = kkk0$t[pick]
+        init_par = rep(c(0.1),6)
+        init_yode = kkk0$y_ode[,pick]
+        init_t = kkk0$t[pick]
+        kkk = ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     }
     
@@ -229,71 +252,128 @@ generate_data_from_sbml <- function(sbml_data, tinterv, samp, noise) {
         
     }
     
-    kkk = ode$new(samp, fun=ode_fun)
+    kkk0 = ode$new(samp, fun=ode_fun)
     xinit = as.matrix(mi$S0)
-    kkk$solve_ode(par_ode=params, xinit, tinterv)
+    kkk0$solve_ode(par_ode=params, xinit, tinterv)
+    
+    init_par = params
+    init_yode = kkk0$y_ode
+    init_t = kkk0$t
+    kkk = ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
+
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates),noise*diag(mi$nStates))
-
+    
     res = list(y_no=y_no, kkk=kkk, time=kkk$t)
     res
 
 }
 
-gradient_match <- function(nst, npar, kkk, y_no, ktype='rbf') {
+gradient_match <- function(kkk, y_no, ktype='rbf') {
     
-    rkgres = rkg(kkk, nst, npar, y_no, ktype)
-    bbb = rkgres$bbb
+    output = capture.output(rkgres <- rkg(kkk, y_no, ktype))
+    bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
     ode_par = kkk$ode_par
-    return(list("ode_par"=ode_par, "res"=rkgres))
+    
+    plot_x = list()
+    plot_y = list()
+    for (i in 1:length(bbb)) { 
+        plot_x[[i]] = bbb[[i]]$t 
+        plot_y[[i]] = rkgres$intp[i, ]        
+    }
+
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
     
 }
 
-gradient_match_third_step <- function(nst, npar, kkk, y_no, ktype='rbf') {
+gradient_match_third_step <- function(kkk, y_no, ktype='rbf') {
 
-    rkgres = rkg(kkk, nst, npar, y_no, ktype)
-    bbb = rkgres$bbb
+    rkgres = rkg(kkk, y_no, ktype)
+    bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
-    crtype = '3'
-    lambda3 = 1e-1
-    res = third(lambda3, kkk, bbb, crtype, nst=nst)
-    oppar = res$oppar
-        
-    ode_par = tail(oppar[[1]], npar)
-    return(list("ode_par"=ode_par, "res"=rkgres))
+    crtype='i'  ## two methods fro third step  'i' fast method means iterative and '3' for slow method means 3rd step
+    lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
+    lamil1 = crossv(lam,kkk,bbb,crtype,y_no)
+    lambdai1=lamil1[[1]]
+    
+    output = capture.output(res <- third(lambdai1,kkk,bbb,crtype))
+    
+    ode_par = res$oppar
+    plot_x = list()
+    plot_y = list()
+    for (i in 1:length(res$rk3$rk)) { 
+        plot_x[[i]] = res$rk3$rk[[i]]$t 
+        plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
+    }
+    
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
     
 }
 
-warping <- function(nst, npar, kkk, y_no, peod, eps, fixlens, ktype='rbf') {
+warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
 
-    rkgres = rkg(kkk, nst, npar, y_no, ktype)
-    bbb = rkgres$bbb
-
-    www = warpfun(kkk,p0,bbb,eps,fixlens)
+    rkgres = rkg(kkk, y_no, ktype)
+    bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
+    
+    #lens=c(3,4,5) ## user can define the init value of lens for sigmoid function. the default is c(3,4,5)
+    fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
+    
+    output = capture.output(www <- warpfun(kkk, p0, bbb, eps, fixlens, kkk$t))
+    
     dtilda= www$dtilda
     bbbw = www$bbbw
+    resmtest = www$wtime
+    wfun=www$wfun
+    wkkk = www$wkkk
+    
+    ode_par = wkkk$ode_par
+    plot_x = list()
+    plot_y = list()
+    for (i in 1:length(bbbw)) { 
+        plot_x[[i]] = resmtest[i, ] 
+        plot_y[[i]] = bbbw[[i]]$predict()$pred
+    }
 
-    ode_par = kkk$ode_par
-    return(list("ode_par"=ode_par, "res"=rkgres))
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
     
 }
 
-third_step_warping <- function(nst, npar, kkk, y_no, peod, eps, fixlens, ktype='rbf') {
+third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     
-    rkgres = rkg(kkk, nst, npar, y_no, ktype)
-    bbb = rkgres$bbb
+    rkgres = rkg(kkk, y_no, ktype)
+    bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
     
-    www = warpfun(kkk,p0,bbb,eps,fixlens)
+    #lens=c(3,4,5) ## user can define the init value of lens for sigmoid function. the default is c(3,4,5)
+    fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
+    
+    www = warpfun(kkk, p0, bbb, eps, fixlens, kkk$t)
+    
     dtilda= www$dtilda
     bbbw = www$bbbw
+    resmtest = www$wtime
+    wfun=www$wfun
+    wkkk = www$wkkk
     
+    ode_par = wkkk$ode_par
+    
+    ##### 3rd step + warp
     woption='w'
-    crtype = '3'
-    lambdaw3= 1e-1
-    res = third(lambdaw3, kkk, bbbw, crtype, woption, dtilda, nst)
+    ####   warp   3rd
+    crtype = 'i'
     
-    oppar = res$oppar  
-    ode_par = tail(oppar[[1]], npar)
-    return(list("ode_par"=ode_par, "res"=rkgres))
+    lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
+    lamwil= crossv(lam,wkkk,bbbw,crtype,y_no,woption,resmtest,dtilda) 
+    lambdawi=lamwil[[1]]
+    
+    output = capture.output(res <- third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
+    ode_par = res$oppar
+    plot_x = list()
+    plot_y = list()
+    for (i in 1:length(res$rk3$rk)) { 
+        plot_x[[i]] = res$rk3$rk[[i]]$t 
+        plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
+    }
+    
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
     
 }

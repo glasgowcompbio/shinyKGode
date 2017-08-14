@@ -1,13 +1,9 @@
 
-
 noise = 0.01  ##   10db0.1    20db 0.01   30db0.001    40db 0.0001
 SEED = 19537
 
-
-library(pspline)
 ### define ode 
     FN_fun = function(t,x,par_ode){
-        print(par_ode)
 	    a=par_ode[1]
 	    b=par_ode[2]
 	    c=par_ode[3]
@@ -31,65 +27,91 @@ library(pspline)
    })
    }
 
-### generate data
-source('rkhs_gradmatch/ode.r')
-kkk = ode$new(2,fun=FN_fun,grfun=FN_grlNODE)
-kkk = ode$new(2,fun=FN_fun)
+##############################################################
+source('kernel1.r')
+source('rkhs1.r')
+source('rk3g1.r')
+source('ode.r')
+source('WarpSin.r')
+
+source('warpfun.r')
+source('crossvr')
+source('warpInitLen.r')
+source('third.r')
+source('rkg.r')
+
+##################  generate data  #################################### 
+kkk0 = ode$new(2,fun=FN_fun,grfun=FN_grlNODE)
 xinit = as.matrix(c(-1,-1))
 tinterv = c(0,10)
-kkk$solve_ode(c(0.2,0.2,3),xinit,tinterv)
+kkk0$solve_ode(c(0.2,0.2,3),xinit,tinterv)
+
+##################################################################
+init_par = rep(c(0.1),3)
+init_yode = kkk0$y_ode
+init_t = kkk0$t
+
+kkk = ode$new(1,fun=FN_fun,grfun=FN_grlNODE,t= init_t,ode_par= init_par, y_ode=init_yode )
+
 n_o = max( dim( kkk$y_ode) )
-
-set.seed(SEED)
 y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0),noise*diag(2))
-nst = 2
-npar = 3
-################################ standard gradient matching ############
-source('rkhs_gradmatch/kernel1.r')
-source('rkhs_gradmatch/rkhs1.r')
-source('rkhs_gradmatch/intfun.r')
-source('rkhs_gradmatch/rk3g1.r')
 
-############################  standard gradient matching
-sink('fhn_fixed.txt')
+
+############################# parameter inference   ############################## 
+##### standard gradient matching
 ktype='rbf'
-rkgres = rkg(kkk,nst,npar,y_no,ktype)
+rkgres = rkg(kkk,y_no,ktype)
 bbb = rkgres$bbb
 
 kkk$ode_par
-sink()
-
 
 ############# gradient matching + thrid step
-crtype = '3'
-lambda3 = 1e-1
-res = third(lambda3,kkk,bbb,crtype)
+crtype='i'
 
+lam=c(1e-4,1e-5)
+lamil1 = crossv1(lam,kkk,bbb,crtype,y_no)
+lambdai1=lamil1[[1]]
+
+res = third(lambdai1,kkk,bbb,crtype)
 oppar = res$oppar
-tail(oppar[[1]],npar)
 
-########## warp    rkgw 194.683 seconds   rkg  8.849 seconds
-source('WarpSin.r')
+
 ###### warp state
 peod = c(8,8.5) #8#9.7     ## the guessing period
 eps= 1          ## the standard deviation of period
-fixlens=c(4.5,4.5)
-www = warpfun(kkk,p0,bbb,eps,fixlens)
+
+lens=c(4,5)
+fixlens=warpInitLen(peod,eps,rkgres,lens)
+
+kkkrkg = kkk$clone()
+www = warpfun(kkkrkg,p0,bbb,eps,fixlens,kkkrkg$t)
+
 dtilda= www$dtilda
 bbbw = www$bbbw
+resmtest = www$wtime
 
-kkk$ode_par
+kkkrkg$ode_par
 
 ##### 3rd step + warp
 woption='w'
 ####   warp   3rd
-crtype = '3'
+crtype = 'i'
 
-lambdaw3= 1e-1
-res = third(lambdaw3,kkk,bbbw,crtype,woption,dtilda)
+lamwil= crossv1(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda) 
+lambdawi=lamwil[[1]]
 
+res = third(lambdawi,kkk,bbbw,crtype,woption,dtilda)
 oppar = res$oppar  
-tail(oppar[[1]],npar)
+
+
+
+
+
+
+
+
+
+
 
 
 
