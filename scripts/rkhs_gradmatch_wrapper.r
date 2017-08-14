@@ -140,9 +140,8 @@ get_initial_values = function(predefined_model) {
 }
 
 generate_data_predefined_models = function(predefined_model, xinit, tinterv, numSpecies, 
-                                           paramsVals, noise, seed=19537) {
+                                           paramsVals, noise) {
 
-    set.seed(SEED)
     if (predefined_model == "lv") {
         
         kkk0 = ode$new(2, fun=LV_fun, grfun=LV_grlNODE)
@@ -150,6 +149,8 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
         init_par = rep(c(0.1),4)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
+        print(init_yode)
+        print(init_t)
         
         kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
         

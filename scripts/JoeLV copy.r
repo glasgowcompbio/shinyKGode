@@ -3,12 +3,12 @@ source('rkhs_gradmatch_wrapper.r')
 SEED=19537
 set.seed(SEED)
 
-noise = 0.017^2 #0.0018^2 #0.052^2
-xinit = as.matrix(c(1,0,1,0,0))
-tinterv = c(0,100)
-numSpecies = 5
-paramsVals = c(0.07,0.6,0.05,0.3,0.017,0.3)
-res = generate_data_predefined_models('bp', xinit, tinterv, numSpecies, paramsVals, noise)
+noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
+xinit = as.matrix(c(0.5,1))
+tinterv = c(0,6)
+numSpecies = 2
+paramsVals = c(1,1,4,1)
+res = generate_data_predefined_models('lv', xinit, tinterv, numSpecies, paramsVals, noise)
 print(res$y_no)
 
 kkk = res$kkk
@@ -31,8 +31,8 @@ for (i in 1:res$nst) {
 }
 
 ########## warp  
-peod = c(200,200,200,200,200)   ## the guessing period for each state  user defined
-eps= 20          ## the standard deviation of period  user defined
+peod = c(6,5.3) #8#9.7     ## the guessing period
+eps= 1          ## the standard deviation of period
 res = warping(kkk, y_no, peod, eps, ktype='rbf')
 print(res$ode_par)
 for (i in 1:res$nst) {
@@ -40,8 +40,8 @@ for (i in 1:res$nst) {
 }
 
 ##### 3rd step + warp
-peod = c(200,200,200,200,200)   ## the guessing period for each state  user defined
-eps= 20          ## the standard deviation of period  user defined
+peod = c(6,5.3) #8#9.7     ## the guessing period
+eps= 1          ## the standard deviation of period
 res = third_step_warping(kkk, y_no, peod, eps, ktype='rbf')
 print(res$ode_par)
 for (i in 1:res$nst) {

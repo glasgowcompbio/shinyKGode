@@ -1,6 +1,7 @@
 
 noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
 SEED = 19537
+set.seed(SEED)
 
 ### define ode 
     LV_fun = function(t,x,par_ode){
@@ -30,18 +31,18 @@ SEED = 19537
     }
 
 ##############################################################
-source('kernel1.r')
-source('rkhs1.r')
-source('rk3g1.r')
-source('ode.r')
-source('WarpSin.r')
+source('/Users/joewandy/git/rkhs_gradmatch/kernel1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkhs1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rk3g1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
+source('/Users/joewandy/git/rkhs_gradmatch/WarpSin.r')
 
-source('warpfun.r')
-source('crossvr')
-source('warpInitLen.r')
-source('third.r')
-source('rkg.r')
-
+source('/Users/joewandy/git/rkhs_gradmatch/warpfun.r')
+source('/Users/joewandy/git/rkhs_gradmatch/crossv.r')
+source('/Users/joewandy/git/rkhs_gradmatch/warpInitLen.r')
+source('/Users/joewandy/git/rkhs_gradmatch/third.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkg.r')
+    
 ##################  generate data  #################################### 
 kkk0 = ode$new(2,fun=LV_fun,grfun=LV_grlNODE)
 xinit = as.matrix(c(0.5,1))
@@ -71,7 +72,7 @@ kkk$ode_par
 crtype='i'
 
 lam=c(1e-4,1e-5)
-lamil1 = crossv1(lam,kkk,bbb,crtype,y_no)
+lamil1 = crossv(lam,kkk,bbb,crtype,y_no)
 lambdai1=lamil1[[1]]
 
 res = third(lambdai1,kkk,bbb,crtype)
@@ -89,15 +90,17 @@ www = warpfun(kkkrkg,p0,bbb,eps,fixlens,kkkrkg$t)
 dtilda= www$dtilda
 bbbw = www$bbbw
 resmtest = www$wtime
-kkkrkg$ode_par
+wfun=www$wfun
+wkkk = www$wkkk
 
+wkkk$ode_par
 
 ##### 3rd step + warp
 woption='w'
 ####   warp   3rd
 crtype = 'i'
 
-lamwil= crossv1(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda) 
+lamwil= crossv(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda) 
 lambdawi=lamwil[[1]]
 
 res = third(lambdawi,kkk,bbbw,crtype,woption,dtilda)
