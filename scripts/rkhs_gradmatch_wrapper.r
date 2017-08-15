@@ -142,11 +142,12 @@ get_initial_values = function(predefined_model) {
 generate_data_predefined_models = function(predefined_model, xinit, tinterv, numSpecies, 
                                            paramsVals, noise) {
 
+    npar = length(paramsVals)
     if (predefined_model == "lv") {
         
         kkk0 = ode$new(2, fun=LV_fun, grfun=LV_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
-        init_par = rep(c(0.1),4)
+        init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
         print(init_yode)
@@ -158,7 +159,7 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
         
         kkk0 = ode$new(numSpecies,fun=FN_fun,grfun=FN_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
-        init_par = rep(c(0.1),3)
+        init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
         
@@ -172,7 +173,7 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
         select = 2
         pick = c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
         
-        init_par = rep(c(0.1),6)
+        init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode[,pick]
         init_t = kkk0$t[pick]
         kkk = ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -181,7 +182,7 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
     
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, numSpecies), noise*diag(numSpecies)) 
-    res = list("time="=kkk$t, "n_o"=n_o, "y_no"=y_no, "kkk"=kkk)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL)
     res
 
 }
@@ -196,7 +197,7 @@ add_no_duplicate <- function(v1, v2) {
     v1
 }
 
-# Parsing problem:
+# TODO: Fix parsing problem:
 # 1. The stochiometry attribute in speciesReference is not used.
 # 2. If global parameters are declared but with no corresponding local parameters in the reactions, 
 #    then summary() will break ???!!
@@ -230,7 +231,9 @@ generate_data_from_sbml <- function(sbml_data, tinterv, samp, noise) {
     ode_fun <- function(t, x, par_ode) {
         
         # print(par_ode)
-        names(par_ode) = initial_names    
+        if (length(par_ode) > 0) {
+            names(par_ode) = initial_names
+        }
         v = rep(0, mi$nReactions)
         xp = rep(0, mi$nStates)
         St = mi$S0
@@ -265,7 +268,7 @@ generate_data_from_sbml <- function(sbml_data, tinterv, samp, noise) {
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates),noise*diag(mi$nStates))
     
-    res = list(y_no=y_no, kkk=kkk, time=kkk$t)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data)
     res
 
 }
@@ -278,12 +281,16 @@ gradient_match <- function(kkk, y_no, ktype='rbf') {
     
     plot_x = list()
     plot_y = list()
+    data = list()
     for (i in 1:length(bbb)) { 
+        print(bbb[[i]])
         plot_x[[i]] = bbb[[i]]$t 
         plot_y[[i]] = rkgres$intp[i, ]        
+        data[[i]] = bbb[[i]]$y
     }
 
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
+                data=data, nst=length(plot_x)))
     
 }
 
@@ -297,17 +304,22 @@ gradient_match_third_step <- function(kkk, y_no, ktype='rbf') {
     lamil1 = crossv(lam,kkk,bbb,crtype,y_no)
     lambdai1=lamil1[[1]]
     
-    output = capture.output(res <- third(lambdai1,kkk,bbb,crtype))
+    # output = capture.output(res <- third(lambdai1,kkk,bbb,crtype))
+    output = ''
+    res <- third(lambdai1,kkk,bbb,crtype)
     
     ode_par = res$oppar
     plot_x = list()
     plot_y = list()
+    data = list()
     for (i in 1:length(res$rk3$rk)) { 
         plot_x[[i]] = res$rk3$rk[[i]]$t 
         plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
+        data[[i]] = res$rk3$rk[[i]]$y
     }
     
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
+                data=data, nst=length(plot_x)))
     
 }
 

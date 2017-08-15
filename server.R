@@ -80,15 +80,12 @@ shinyServer(function(input, output, session) {
         
         output$odeParameters = renderText({ paste(params, collapse=", " ) })        
         for (i in 1:numParams) {
-            paramLabel = params[i]
-            paramId = paste0("param", i)
             paramValId = paste0('param_val', i)
-            paramValLabel = "Starting Value"
+            paramValLabel = params[i]
             insertUI(
                 selector = '#placeholderParams',
                 ui = fluidRow(
-                    column(6, selectInput(paramId, paramLabel, constraintChoices)),
-                    column(6, numericInput(paramValId, paramValLabel, value=paramsVals[i], min=0, max=NA, step=1))
+                    column(12, numericInput(paramValId, paramValLabel, value=paramsVals[i], min=0, max=NA, step=1))
                 )                    
             )
         }
@@ -232,16 +229,25 @@ shinyServer(function(input, output, session) {
         
         withProgress(message='Inferring', value=0, {
             
+            if (!is.null(res$sbml_data)) {
+                attach(res$sbml_data)
+            }
+            
             if (input$method == "gm") {
-                infer_res = gradient_match(nst, npar, kkk, y_no, ktype='rbf')
+                infer_res = gradient_match(kkk, y_no, ktype='rbf')
             } else if (input$method == "gm+3rd") {
-                infer_res = gradient_match_third_step(nst, npar, kkk, y_no, ktype='rbf')
+                infer_res = gradient_match_third_step(kkk, y_no, ktype='rbf')
             } else if (input$method == "warping") {
                 # TODO
             } else if (input$method == "3rd+warping") {
                 # TODO
             }
             
+            if (!is.null(res$sbml_data)) {
+                detach(res$sbml_data)
+            }
+            
+            print(infer_res)
             x = infer_res$ode_par
             df = data.frame(parameters=x)
             sbml = parseSBML()
@@ -260,13 +266,12 @@ shinyServer(function(input, output, session) {
             #     theme_bw() +
             #     theme(text = element_text(size=20))
 
-            res = infer_res$res
             pp = list()
-            for (i in 1:length(res$bbb)) {
+            for (i in 1:infer_res$nst) {
                 
-                time = res$bbb[[i]]$t
-                y = res$bbb[[i]]$y
-                intp = res$intp[i, ]
+                time = infer_res$plot_x[[i]]
+                y = infer_res$data[[i]]
+                intp = infer_res$plot_y[[i]]
                     
                 plot_df = data.frame(time)
                 plot_df$data = y
