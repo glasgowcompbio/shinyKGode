@@ -150,9 +150,6 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
-        print(init_yode)
-        print(init_t)
-        
         kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
         
     } else if (predefined_model == "fhg") {
@@ -162,7 +159,6 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
-        
         kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
         
     } else if (predefined_model == 'bp') {
@@ -221,12 +217,11 @@ load_sbml <- function(f) {
     
 }
 
-generate_data_from_sbml <- function(sbml_data, tinterv, samp, noise) {
+generate_data_from_sbml <- function(f, xinit, tinterv, params, samp, noise) {
 
-    model = sbml_data$model
-    mi = sbml_data$mi
-    initial_names = sbml_data$initial_names
-    params = sbml_data$params
+    model = SBMLR:::readSBML(f)
+    mi = summary(model)
+    initial_names = names(params)
     
     ode_fun <- function(t, x, par_ode) {
         
@@ -268,7 +263,7 @@ generate_data_from_sbml <- function(sbml_data, tinterv, samp, noise) {
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates),noise*diag(mi$nStates))
     
-    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk)
     res
 
 }

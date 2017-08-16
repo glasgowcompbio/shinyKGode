@@ -24,11 +24,11 @@ shinyServer(function(input, output, session) {
         )
     })    
     
-    parseSBML = reactive({
+    getModel = reactive({
         
         if (is.null(input$sbml_file)) { # no SBML input, return pre-defined model
             
-            res = get_initial_values(input$predefined_model)
+            res = get_initial_values(input$selected_model)
             return(res)
                         
         } else { # extract from the SBML file
@@ -67,11 +67,11 @@ shinyServer(function(input, output, session) {
         
     })
     
-    resetModel = function(input, output) {
+    resetScreen = function(input, output) {
         removeUI(selector = '#placeholderParams *', multiple=TRUE)
     }
     
-    loadModel = function(input, output, 
+    showModel = function(input, output, 
                          numSpecies, species, speciesInitial,
                          numParams, params, paramsVals) {
 
@@ -92,8 +92,8 @@ shinyServer(function(input, output, session) {
         
         labels = c()
         for (i in 1:numSpecies) {
-            stateLabel = species[i]
-            stateId = paste0("state", i)
+            kernelLabel = species[i]
+            kernelId = paste0("kernel", i)
             initCondId = paste0('initial_cond', i)
             initCondLabel = "Initial Cond."
             guessId = paste0('p0_', i)
@@ -101,60 +101,68 @@ shinyServer(function(input, output, session) {
             insertUI(
                 selector = '#placeholderStates',
                 ui = fluidRow(
-                    column(4, selectInput(stateId, stateLabel, kernelChoices)),
+                    column(4, selectInput(kernelId, kernelLabel, kernelChoices)),
                     column(4, numericInput(initCondId, initCondLabel, value=speciesInitial[i], min=0, max=NA, step=0.1)),
                     column(4, numericInput(guessId, guessLabel, value=6, min=0, max=NA, step=0.1))
                 )                    
             )
-            labels = c(labels, stateLabel)
+            labels = c(labels, kernelLabel)
         }
         output$systemStates = renderText({ paste(labels, collapse=", " ) })
         
     }
     
-    observeEvent(input$predefined_model, {
+    observeEvent(input$selected_model, {
         
-        res = get_initial_values(input$predefined_model)
+        res = getModel()
         if (!is.null(res)) { # load one of the three pre-defined models
-            loadModel(input, output, 
+            showModel(input, output, 
                       res$numSpecies, res$species, res$speciesInitial, 
                       res$numParams, res$params, res$paramsVals)
         } else { # no predefined model is selected
-            resetModel(input, output)
+            resetScreen(input, output)
         }
         
     })
     
     observeEvent(input$sbml_file, {
         
-        sbml = parseSBML()
-        loadModel(input, output, 
+        sbml = getModel()
+        showModel(input, output, 
                   sbml$numSpecies, sbml$species, sbml$speciesInitial, 
                   sbml$numParams, sbml$params, sbml$paramsVals)
 
     })    
 
+    get_values = function(input, id, n, param_names) {
+        vals = numeric(0)
+        for (i in 1:n) {
+            vals = c(vals, input[[paste0(id, i)]])
+        }
+        names(vals) = param_names
+        return(vals)
+    }
+    
     generateData = reactive({
 
         noise = input$snr  ## TODO: change from variance to SNR 
         tinterv = c(input$timePointsMin, input$timePointsMax)
         
+        model = getModel()
+        xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
+        params = get_values(input, 'param_val', model$numParams, model$params)
+        
         if (is.null(input$sbml_file)) { # no SBML input, generate data using predefined models
 
-            predefined_model = input$predefined_model
-                        
-            sbml = parseSBML()
-            xinit = as.matrix(sbml$speciesInitial)
-            numSpecies = sbml$numSpecies
-            paramsVals = sbml$paramsVals
-            
-            res = generate_data_predefined_models(predefined_model, xinit, tinterv, numSpecies, paramsVals, noise)
+            selected_model = input$selected_model
+            res = generate_data_selected_models(selected_model, xinit, tinterv, 
+                                                  model$numSpecies, params, noise)
             
         } else { # extract from the SBML file
          
             samp = 2
-            sbml_data = load_sbml(input$sbml_file$datapath)
-            res = generate_data_from_sbml(sbml_data, tinterv, samp, noise)
+            f = input$sbml_file$datapath
+            res = generate_data_from_sbml(f, xinit, tinterv, params, samp, noise)
 
         }
         
@@ -164,11 +172,12 @@ shinyServer(function(input, output, session) {
     
     observeEvent(input$generateBtn, {
 
-        res = generateData()
-        sbml = parseSBML()
+        model = getModel()
         
+        res = generateData()
         t = res$time
         y_no = res$y_no
+        
         updateTabsetPanel(session, "inTabset", selected="results")
         output$resultsType = renderText({ "Generated data:" })
         output$resultsPlot = renderPlot({
@@ -180,7 +189,7 @@ shinyServer(function(input, output, session) {
             pp = list()
             for (i in 1:ncol(y_no)) {
                 
-                species = sbml$species[i]
+                species = model$species[i]
                 title = paste('State', species, sep=' ')
                 pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
                     geom_point(data=subset(plot_df, state==species), color="red") + 
@@ -215,11 +224,13 @@ shinyServer(function(input, output, session) {
         kkk = res$kkk
         y_no = res$y_no
         
-        sbml = parseSBML()
+        sbml = getModel()
         nst = sbml$numSpecies
         npar = sbml$numParams
-        xinit = as.matrix(sbml$speciesInitial)
         tinterv = c(input$timePointsMin, input$timePointsMax)
+
+        xinit = as.matrix(sbml$speciesInitial)
+        # peod = 
         
         # for (st in 1:numSpecies)
         # {
@@ -238,7 +249,7 @@ shinyServer(function(input, output, session) {
             } else if (input$method == "gm+3rd") {
                 infer_res = gradient_match_third_step(kkk, y_no, ktype='rbf')
             } else if (input$method == "warping") {
-                # TODO
+                infer_res = warping(kkk, y_no, peod, eps, ktype='rbf')                
             } else if (input$method == "3rd+warping") {
                 # TODO
             }
@@ -250,7 +261,7 @@ shinyServer(function(input, output, session) {
             print(infer_res)
             x = infer_res$ode_par
             df = data.frame(parameters=x)
-            sbml = parseSBML()
+            sbml = getModel()
             rownames(df) = sbml$params
 
         })
