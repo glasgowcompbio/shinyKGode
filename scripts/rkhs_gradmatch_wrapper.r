@@ -327,7 +327,7 @@ warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     #lens=c(3,4,5) ## user can define the init value of lens for sigmoid function. the default is c(3,4,5)
     fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
     
-    output = capture.output(www <- warpfun(kkk, p0, bbb, eps, fixlens, kkk$t))
+    output = capture.output(www <- warpfun(kkk, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
     
     dtilda= www$dtilda
     bbbw = www$bbbw
@@ -338,12 +338,15 @@ warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     ode_par = wkkk$ode_par
     plot_x = list()
     plot_y = list()
+    data = list()
     for (i in 1:length(bbbw)) { 
         plot_x[[i]] = resmtest[i, ] 
         plot_y[[i]] = bbbw[[i]]$predict()$pred
+        data[[i]] = bbbw[[i]]$y
     }
 
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
+                data=data, nst=length(plot_x)))
     
 }
 

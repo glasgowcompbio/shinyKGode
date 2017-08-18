@@ -33,7 +33,6 @@ print(res$ode_par)
 # warp
 peod = c(6,5.3) ## the guessing period
 eps= 1          ## the standard deviation of period
-fixlens=c(3,3)
 res = warping(kkk, y_no, peod, eps, ktype='rbf')
 print(res$ode_par)
 
