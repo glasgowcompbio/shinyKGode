@@ -155,7 +155,7 @@ shinyServer(function(input, output, session) {
         if (is.null(input$sbml_file)) { # no SBML input, generate data using predefined models
 
             selected_model = input$selected_model
-            res = generate_data_selected_models(selected_model, xinit, tinterv, 
+            res = generate_data_selected_model(selected_model, xinit, tinterv, 
                                                   model$numSpecies, params, noise)
             
         } else { # extract from the SBML file
@@ -224,14 +224,9 @@ shinyServer(function(input, output, session) {
         kkk = res$kkk
         y_no = res$y_no
         
-        sbml = getModel()
-        nst = sbml$numSpecies
-        npar = sbml$numParams
-        tinterv = c(input$timePointsMin, input$timePointsMax)
+        model = getModel()
+        nst = model$numSpecies
 
-        xinit = as.matrix(sbml$speciesInitial)
-        # peod = 
-        
         # for (st in 1:numSpecies)
         # {
         #     incProgress(st/numSpecies, detail=paste("System State", st))
@@ -249,6 +244,8 @@ shinyServer(function(input, output, session) {
             } else if (input$method == "gm+3rd") {
                 infer_res = gradient_match_third_step(kkk, y_no, ktype='rbf')
             } else if (input$method == "warping") {
+                peod = get_values(input, 'p0_', nst, model$species)
+                eps = input$eps
                 infer_res = warping(kkk, y_no, peod, eps, ktype='rbf')                
             } else if (input$method == "3rd+warping") {
                 # TODO
@@ -261,8 +258,7 @@ shinyServer(function(input, output, session) {
             print(infer_res)
             x = infer_res$ode_par
             df = data.frame(parameters=x)
-            sbml = getModel()
-            rownames(df) = sbml$params
+            rownames(df) = model$params
 
         })
         
@@ -289,7 +285,7 @@ shinyServer(function(input, output, session) {
                 plot_df$interpolated = intp
                 plot_df = melt(plot_df, id.vars='time', variable.name='type')
                 
-                title = paste('State', sbml$species[i], sep=' ')
+                title = paste('State', model$species[i], sep=' ')
                 pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
                     geom_point(data=subset(plot_df, type=='data'), aes(color='data')) + 
                     geom_line(data=subset(plot_df, type=='interpolated'), aes(color='interpolated')) +

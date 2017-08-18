@@ -1,7 +1,5 @@
 library(shiny)
 library(shinyjs)
-library(rhdf5)
-library(naturalsort)
 
 kernelChoices <- c("kernel1"="kernel1", "kernel2"="kernel2", "kernel3"="kernel3")
 
@@ -17,7 +15,7 @@ shinyUI(fluidPage(
 
         column(2,
                h4("Define Model"),
-               selectInput("predefined_model", "Select predefined models",
+               selectInput("selected_model", "Select predefined models",
                            c("---" = "",
                                "Lotka-Volterra" = "lv",
                                "Fiz hugh nagumo" = "fhg",
@@ -80,7 +78,8 @@ shinyUI(fluidPage(
                                selectInput('statesAll', "Kernel", kernelChoices),                               
                                helpText(("Or specify different kernels for individual system states.")),
                                tags$div(id = 'placeholderStates'),
-                               helpText(("If warping is enabled, the guessing periods above will be used."))
+                               numericInput('eps', 'Standard deviation of period', value=1, min=0, max=NA, step=0.1),
+                               helpText("If warping is enabled, the guessing periods and the standard deviation of period will be used.")
                         )
                ),
                tabPanel(title="Results",

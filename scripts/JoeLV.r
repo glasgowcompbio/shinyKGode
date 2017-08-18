@@ -31,9 +31,9 @@ set.seed(SEED)
     }
 
 ##############################################################
-source('/Users/joewandy/git/rkhs_gradmatch/kernel1.r')
-source('/Users/joewandy/git/rkhs_gradmatch/rkhs1.r')
-source('/Users/joewandy/git/rkhs_gradmatch/rk3g1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/kernel.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkhs.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rk3g.r')
 source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
 source('/Users/joewandy/git/rkhs_gradmatch/WarpSin.r')
 

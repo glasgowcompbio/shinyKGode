@@ -1,6 +1,6 @@
-source('/Users/joewandy/git/rkhs_gradmatch/kernel1.r')
-source('/Users/joewandy/git/rkhs_gradmatch/rkhs1.r')
-source('/Users/joewandy/git/rkhs_gradmatch/rk3g1.r')
+source('/Users/joewandy/git/rkhs_gradmatch/kernel.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkhs.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rk3g.r')
 source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
 source('/Users/joewandy/git/rkhs_gradmatch/WarpSin.r')
 
@@ -124,13 +124,13 @@ BP_initial_values = function() {
     
 }
 
-get_initial_values = function(predefined_model) {
+get_initial_values = function(selected_model) {
     
-    if (predefined_model == "lv") {
+    if (selected_model == "lv") {
         res = LV_initial_values()
-    } else if (predefined_model == "fhg") {
+    } else if (selected_model == "fhg") {
         res = FN_initial_values()
-    } else if (predefined_model == 'bp') {
+    } else if (selected_model == 'bp') {
         res = BP_initial_values()
     } else {
         res = NULL
@@ -139,11 +139,11 @@ get_initial_values = function(predefined_model) {
     
 }
 
-generate_data_predefined_models = function(predefined_model, xinit, tinterv, numSpecies, 
+generate_data_selected_model = function(selected_model, xinit, tinterv, numSpecies, 
                                            paramsVals, noise) {
 
     npar = length(paramsVals)
-    if (predefined_model == "lv") {
+    if (selected_model == "lv") {
         
         kkk0 = ode$new(2, fun=LV_fun, grfun=LV_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
@@ -152,7 +152,7 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
         init_t = kkk0$t
         kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
         
-    } else if (predefined_model == "fhg") {
+    } else if (selected_model == "fhg") {
         
         kkk0 = ode$new(numSpecies,fun=FN_fun,grfun=FN_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
@@ -161,7 +161,7 @@ generate_data_predefined_models = function(predefined_model, xinit, tinterv, num
         init_t = kkk0$t
         kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
         
-    } else if (predefined_model == 'bp') {
+    } else if (selected_model == 'bp') {
         
         kkk0 = ode$new(1, fun=BP_fun, grfun=BP_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
@@ -263,7 +263,8 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, samp, noise) {
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates),noise*diag(mi$nStates))
     
-    res = list(time=kkk$t, y_no=y_no, kkk=kkk)
+    sbml_data = list(model=model, mi=mi, initial_names=initial_names)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data)
     res
 
 }

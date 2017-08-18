@@ -149,6 +149,7 @@
               </apply>
           </math>
           <listOfParameters>
+            <parameter id="a" name="a" value="0.2" constant="true"/>
             <parameter id="c" name="c" value="3" constant="true"/>
           </listOfParameters>
         </kineticLaw>

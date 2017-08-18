@@ -8,12 +8,14 @@ set.seed(SEED)
 f = '../SBML/LotkaVolterra.xml';
 noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
 samp = 2
+xinit = as.matrix(c(0.5,1))
+tinterv = c(0,6)
+params = c(alpha=1,beta=1,gamma=4,delta=1)
+res = generate_data_from_sbml(f, xinit, tinterv, params, samp, noise)
 
-sbml_data = load_sbml(f)
-
-res = generate_data_from_sbml(sbml_data, c(0,6), samp, noise)
 kkk = res$kkk
 y_no = res$y_no
+sbml_data = res$sbml_data
 
 # gradient matching
 res = gradient_match(kkk, y_no)
@@ -36,7 +38,7 @@ res = warping(kkk, y_no, peod, eps, ktype='rbf')
 print(res$ode_par)
 
 # 3rd step + warp
-res = third_step_warping(sbml_data$mi$nStates, length(sbml_data$params), kkk, y_no, peod, eps, fixlens)
+res = third_step_warping(kkk, y_no, peod, eps)
 print(res$ode_par)
 
 ## try Fitz-Hugh Nagumo model
@@ -44,16 +46,21 @@ print(res$ode_par)
 f = '../SBML/FHN.xml';
 noise = 0.01  ##   10db0.1    20db 0.01   30db0.001    40db 0.0001
 samp = 2
+xinit = as.matrix(c(-1,-1))
+tinterv = c(0,10)
+params = c(a=0.2, b=0.2, c=3)
+res = generate_data_from_sbml(f, xinit, tinterv, params, samp, noise)
 
-sbml_data = load_sbml(f)
-res = generate_data_from_sbml(sbml_data, ode_fun, c(0,10), samp, noise)
 kkk = res$kkk
 y_no = res$y_no
+sbml_data = res$sbml_data
 
-sink('fhn_parsed.txt')
-res = gradient_match(sbml_data$mi$nStates, length(sbml_data$params), kkk, y_no)
+# sink('fhn_parsed.txt')
+res = gradient_match(kkk, y_no)
 print(res$ode_par)
-sink()
+# sink()
 
-res = gradient_match_third_step(sbml_data$mi$nStates, length(sbml_data$params), sbml_data, kkk, y_no)
+attach(sbml_data)
+res = gradient_match_third_step(kkk, y_no)
+detach(sbml_data)
 print(res$ode_par)
