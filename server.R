@@ -92,21 +92,18 @@ shinyServer(function(input, output, session) {
         
         labels = c()
         for (i in 1:numSpecies) {
-            kernelLabel = species[i]
-            kernelId = paste0("kernel", i)
             initCondId = paste0('initial_cond', i)
-            initCondLabel = "Initial Cond."
+            initCondLabel = paste0(species[i], " Initial Cond.")
             guessId = paste0('p0_', i)
             guessLabel = 'Guess Period'
             insertUI(
                 selector = '#placeholderStates',
                 ui = fluidRow(
-                    column(4, selectInput(kernelId, kernelLabel, kernelChoices)),
-                    column(4, numericInput(initCondId, initCondLabel, value=speciesInitial[i], min=0, max=NA, step=0.1)),
-                    column(4, numericInput(guessId, guessLabel, value=6, min=0, max=NA, step=0.1))
+                    column(6, numericInput(initCondId, initCondLabel, value=speciesInitial[i], min=0, max=NA, step=0.1)),
+                    column(6, numericInput(guessId, guessLabel, value=6, min=0, max=NA, step=0.1))
                 )                    
             )
-            labels = c(labels, kernelLabel)
+            labels = c(labels, species[i])
         }
         output$systemStates = renderText({ paste(labels, collapse=", " ) })
         
@@ -226,7 +223,7 @@ shinyServer(function(input, output, session) {
         
         model = getModel()
         nst = model$numSpecies
-
+        
         # for (st in 1:numSpecies)
         # {
         #     incProgress(st/numSpecies, detail=paste("System State", st))
@@ -240,17 +237,17 @@ shinyServer(function(input, output, session) {
             }
             
             if (input$method == "gm") {
-                infer_res = gradient_match(kkk, y_no, ktype='rbf')
+                infer_res = gradient_match(kkk, y_no, ktype=input$ktype)
             } else if (input$method == "gm+3rd") {
-                infer_res = gradient_match_third_step(kkk, y_no, ktype='rbf')
+                infer_res = gradient_match_third_step(kkk, y_no, ktype=input$ktype)
             } else if (input$method == "warping") {
                 peod = get_values(input, 'p0_', nst, model$species)
                 eps = input$eps
-                infer_res = warping(kkk, y_no, peod, eps, ktype='rbf')                
+                infer_res = warping(kkk, y_no, peod, eps, ktype=input$ktype)                
             } else if (input$method == "3rd+warping") {
                 peod = get_values(input, 'p0_', nst, model$species)
                 eps = input$eps
-                infer_res = third_step_warping(kkk, y_no, peod, eps, ktype='rbf')                
+                infer_res = third_step_warping(kkk, y_no, peod, eps, ktype=input$ktype)                
             }
             
             if (!is.null(res$sbml_data)) {

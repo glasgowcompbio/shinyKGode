@@ -1,7 +1,7 @@
 library(shiny)
 library(shinyjs)
 
-kernelChoices <- c("kernel1"="kernel1", "kernel2"="kernel2", "kernel3"="kernel3")
+kernelChoices <- c("rbf"="rbf", "mlp"="mlp")
 
 shinyUI(fluidPage(
     
@@ -51,35 +51,36 @@ shinyUI(fluidPage(
                actionButton("generateBtn", "Generate"),               
         style="overflow-x: scroll; overflow-y: scroll"),
 
-        column(8,
+        column(10,
            tabsetPanel(id = "inTabset",
                tabPanel(title="Inference",
                         value="inference",
-                        column(4, offset = 1,
+                        column(3, offset = 1,
                                h5("ODE Parameters"),
                                verbatimTextOutput("odeParameters", placeholder = TRUE),
                                helpText(("Specify the starting values of parameters.")),
                                tags$div(id = 'placeholderParams'),
-                               tags$br(),
-                               radioButtons("method", "Method", c(
-                                   "Gradient Matching"="gm", 
-                                   "Gradient Matching + 3rd Step"="gm+3rd",
-                                   "Warping"="warping",
-                                   "3rd Step + Warping"="3rd+warping"
-                               ), inline=F),
-                               shinyjs::disabled(
-                                   actionButton("inferBtn", "Infer")
-                               )
+                               tags$br()
                         ),
-                        column(5, offset = 1,
+                        column(3, offset = 1,
                                h5("System States"),
                                verbatimTextOutput("systemStates", placeholder = TRUE),
-                               helpText(("Specify the same kernel for all system states.")),
-                               selectInput('statesAll', "Kernel", kernelChoices),                               
-                               helpText(("Or specify different kernels for individual system states.")),
                                tags$div(id = 'placeholderStates'),
+                               selectInput('ktype', "Kernel", kernelChoices),                               
                                numericInput('eps', 'Standard deviation of period', value=1, min=0, max=NA, step=0.1),
-                               helpText("If warping is enabled, the guessing periods and the standard deviation of period will be used.")
+                               helpText("If warping is selected, the guess periods and the standard deviation of period will be used.")
+                        ),
+                        column(3, offset = 1,
+                           h5("Run Inference"),
+                           radioButtons("method", "Method", c(
+                               "Gradient Matching"="gm", 
+                               "Gradient Matching + 3rd Step"="gm+3rd",
+                               "Warping"="warping",
+                               "3rd Step + Warping"="3rd+warping"
+                           ), inline=F),
+                           shinyjs::disabled(
+                               actionButton("inferBtn", "Infer")
+                           )
                         )
                ),
                tabPanel(title="Results",
