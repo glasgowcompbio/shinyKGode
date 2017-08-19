@@ -248,7 +248,9 @@ shinyServer(function(input, output, session) {
                 eps = input$eps
                 infer_res = warping(kkk, y_no, peod, eps, ktype='rbf')                
             } else if (input$method == "3rd+warping") {
-                # TODO
+                peod = get_values(input, 'p0_', nst, model$species)
+                eps = input$eps
+                infer_res = third_step_warping(kkk, y_no, peod, eps, ktype='rbf')                
             }
             
             if (!is.null(res$sbml_data)) {

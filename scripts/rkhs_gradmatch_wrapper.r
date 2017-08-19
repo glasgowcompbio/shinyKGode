@@ -323,10 +323,7 @@ warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
 
     rkgres = rkg(kkk, y_no, ktype)
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
-    
-    #lens=c(3,4,5) ## user can define the init value of lens for sigmoid function. the default is c(3,4,5)
     fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
-    
     output = capture.output(www <- warpfun(kkk, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
     
     dtilda= www$dtilda
@@ -354,11 +351,9 @@ third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     
     rkgres = rkg(kkk, y_no, ktype)
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
-    
-    #lens=c(3,4,5) ## user can define the init value of lens for sigmoid function. the default is c(3,4,5)
     fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
-    
-    www = warpfun(kkk, p0, bbb, eps, fixlens, kkk$t)
+    kkkrkg = kkk$clone()
+    output = capture.output(www <- warpfun(kkkrkg, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
     
     dtilda= www$dtilda
     bbbw = www$bbbw
@@ -366,26 +361,26 @@ third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     wfun=www$wfun
     wkkk = www$wkkk
     
-    ode_par = wkkk$ode_par
-    
     ##### 3rd step + warp
     woption='w'
     ####   warp   3rd
     crtype = 'i'
-    
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
-    lamwil= crossv(lam,wkkk,bbbw,crtype,y_no,woption,resmtest,dtilda) 
+    lamwil= crossv(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda) 
     lambdawi=lamwil[[1]]
-    
-    output = capture.output(res <- third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
+    res = third(lambdawi,wkkk,bbbw,crtype,woption,dtilda)  ## add third step after warping
+
     ode_par = res$oppar
     plot_x = list()
     plot_y = list()
+    data = list()
     for (i in 1:length(res$rk3$rk)) { 
         plot_x[[i]] = res$rk3$rk[[i]]$t 
         plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
+        data[[i]] = res$rk3$rk[[i]]$y
     }
     
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, nst=length(plot_x)))
+    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
+                data=data, nst=length(plot_x)))
     
 }
