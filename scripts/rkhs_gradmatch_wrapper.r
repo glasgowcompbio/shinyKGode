@@ -124,7 +124,7 @@ BP_initial_values = function() {
     
 }
 
-get_initial_values = function(selected_model) {
+get_initial_values_selected = function(selected_model) {
     
     if (selected_model == "lv") {
         res = LV_initial_values()
@@ -136,6 +136,39 @@ get_initial_values = function(selected_model) {
         res = NULL
     }
     res
+    
+}
+
+get_initial_values_sbml = function(inFile) {
+    
+    print(inFile)
+    d = libSBML:::readSBML(inFile$datapath);
+    
+    errors   = SBMLDocument_getNumErrors(d);
+    SBMLDocument_printErrors(d);
+    m = SBMLDocument_getModel(d);
+    
+    params = character(0);
+    paramsVals = vector();
+    for(i in seq_len(Model_getNumParameters( m ))) {
+        sp = Model_getParameter( m, i-1);
+        params = c(params, Parameter_getId(sp));
+        paramsVals = c(paramsVals, Parameter_getValue(sp));
+    }
+    
+    species = character(0);
+    speciesInitial = vector()
+    for(i in seq_len(Model_getNumSpecies(m))) {
+        sp = Model_getSpecies(m, i-1);
+        species = c(species, Species_getId(sp));
+        speciesInitial = c(speciesInitial, Species_getInitialConcentration(sp));
+    }
+    
+    numSpecies = Model_getNumSpecies(m)
+    numParams = Model_getNumParameters(m)
+    
+    return(list("numSpecies"=numSpecies, "species"=species, "speciesInitial"=speciesInitial, 
+                "numParams"=numParams, "params"=params, "paramsVals"=paramsVals))
     
 }
 

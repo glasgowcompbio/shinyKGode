@@ -1,7 +1,11 @@
 library(shiny)
 library(shinyjs)
 
-kernelChoices <- c("rbf"="rbf", "mlp"="mlp")
+kernelChoices = c("rbf"="rbf", "mlp"="mlp")
+modelChoices = c("---" = "",
+                 "Lotka-Volterra" = "lv",
+                 "Fiz hugh nagumo" = "fhg",
+                 "Biopathway" = "bp")
 
 shinyUI(fluidPage(
     
@@ -15,11 +19,7 @@ shinyUI(fluidPage(
 
         column(2,
                h4("Define Model"),
-               selectInput("selected_model", "Select predefined models",
-                           c("---" = "",
-                               "Lotka-Volterra" = "lv",
-                               "Fiz hugh nagumo" = "fhg",
-                               "Biopathway" = "bp")),               
+               selectInput("selected_model", "Select predefined models", modelChoices),               
                fileInput("sbml_file", "Or you can upload your own model in SBML format",
                          accept = c(
                              "application/octet-stream",

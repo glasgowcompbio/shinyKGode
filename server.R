@@ -8,10 +8,10 @@ source('scripts/rkhs_gradmatch_wrapper.r')
 
 SEED = 19537
 set.seed(SEED)
-
-# true parameters
-kernelChoices = c("kernel1"="kernel1", "kernel2"="kernel2", "kernel3"="kernel3")
-constraintChoices = c("---"="---", "Gaussian"="gaussian", "Gamma"="gamma")
+modelChoices = c("---" = "",
+                 "Lotka-Volterra" = "lv",
+                 "Fiz hugh nagumo" = "fhg",
+                 "Biopathway" = "bp")
 
 shinyServer(function(input, output, session) {
    
@@ -23,48 +23,22 @@ shinyServer(function(input, output, session) {
                            "Insert some text")
         )
     })    
-    
-    getModel = reactive({
-        
-        if (is.null(input$sbml_file)) { # no SBML input, return pre-defined model
-            
-            res = get_initial_values(input$selected_model)
-            return(res)
-                        
-        } else { # extract from the SBML file
 
-            inFile = input$sbml_file
-            print(inFile)
-            d = libSBML:::readSBML(inFile$datapath);
-            
-            errors   = SBMLDocument_getNumErrors(d);
-            SBMLDocument_printErrors(d);
-            m = SBMLDocument_getModel(d);
-            
-            params = character(0);
-            paramsVals = vector();
-            for(i in seq_len(Model_getNumParameters( m ))) {
-                sp = Model_getParameter( m, i-1);
-                params = c(params, Parameter_getId(sp));
-                paramsVals = c(paramsVals, Parameter_getValue(sp));
-            }
-            
-            species = character(0);
-            speciesInitial = vector()
-            for(i in seq_len(Model_getNumSpecies(m))) {
-                sp = Model_getSpecies(m, i-1);
-                species = c(species, Species_getId(sp));
-                speciesInitial = c(speciesInitial, Species_getInitialConcentration(sp));
-            }
-            
-            numSpecies = Model_getNumSpecies(m)
-            numParams = Model_getNumParameters(m)
-            
-            return(list("numSpecies"=numSpecies, "species"=species, "speciesInitial"=speciesInitial, 
-                        "numParams"=numParams, "params"=params, "paramsVals"=paramsVals))
-                        
-        }
+    values <- reactiveValues(
+        upload_state = NULL
+    )    
         
+    getModel = reactive({
+
+        if (is.null(values$upload_state)) {
+            res = NULL
+        } else if (values$upload_state == 'uploaded') {
+            res = get_initial_values_sbml(input$sbml_file)
+        } else if (values$upload_state == 'selected') {
+            res = get_initial_values_selected(input$selected_model)
+        }
+        return(res)
+
     })
     
     resetScreen = function(input, output) {
@@ -110,9 +84,11 @@ shinyServer(function(input, output, session) {
     }
     
     observeEvent(input$selected_model, {
-        
+
+        values$upload_state <- 'selected'
         res = getModel()
-        if (!is.null(res)) { # load one of the three pre-defined models
+        
+        if (!is.null(res)) { # load one of the three pre-defined models, null otherwise
             showModel(input, output, 
                       res$numSpecies, res$species, res$speciesInitial, 
                       res$numParams, res$params, res$paramsVals)
@@ -123,7 +99,13 @@ shinyServer(function(input, output, session) {
     })
     
     observeEvent(input$sbml_file, {
-        
+
+        # updateSelectInput(session, "selected_model", 
+        #                   label = "Select predefined models",
+        #                   choices = modelChoices,
+        #                   selected = head(modelChoices, 1))               
+
+        values$upload_state <- 'uploaded'
         sbml = getModel()
         showModel(input, output, 
                   sbml$numSpecies, sbml$species, sbml$speciesInitial, 
