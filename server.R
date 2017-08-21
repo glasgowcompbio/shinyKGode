@@ -207,44 +207,37 @@ shinyServer(function(input, output, session) {
         model = getModel()
         nst = model$numSpecies
 
-        # for (st in 1:numSpecies)
-        # {
-        #     incProgress(st/numSpecies, detail=paste("System State", st))
-        # }
-        # incProgress(1, detail="3rd Step Iteration")
+        progress <- shiny::Progress$new()
+        on.exit(progress$close())
         
-        withProgress(message='Inferring', value=0, {
-            
-            if (!is.null(res$sbml_data)) {
-                attach(res$sbml_data)
-            }
-            
-            if (input$method == "gm") {
-                infer_res = gradient_match(kkk, y_no, ktype=input$ktype)
-            } else if (input$method == "gm+3rd") {
-                infer_res = gradient_match_third_step(kkk, y_no, ktype=input$ktype)
-            } else if (input$method == "warping") {
-                peod = get_values(input, 'p0_', nst, model$species)
-                eps = input$eps
-                infer_res = warping(kkk, y_no, peod, eps, ktype=input$ktype)                
-            } else if (input$method == "3rd+warping") {
-                peod = get_values(input, 'p0_', nst, model$species)
-                eps = input$eps
-                infer_res = third_step_warping(kkk, y_no, peod, eps, ktype=input$ktype)                
-            }
-            
-            df = data.frame(parameters=infer_res$ode_par)
-            rownames(df) = model$params
+        if (!is.null(res$sbml_data)) {
+            attach(res$sbml_data)
+        }
+        
+        if (input$method == "gm") {
+            infer_res = gradient_match(kkk, y_no, input$ktype, progress)
+        } else if (input$method == "gm+3rd") {
+            infer_res = gradient_match_third_step(kkk, y_no, input$ktype, progress)
+        } else if (input$method == "warping") {
+            peod = get_values(input, 'p0_', nst, model$species)
+            eps = input$eps
+            infer_res = warping(kkk, y_no, peod, eps, input$ktype, progress)                
+        } else if (input$method == "3rd+warping") {
+            peod = get_values(input, 'p0_', nst, model$species)
+            eps = input$eps
+            infer_res = third_step_warping(kkk, y_no, peod, eps, input$ktype, progress)                
+        }
+        
+        df = data.frame(parameters=infer_res$ode_par)
+        rownames(df) = model$params
 
-            values$infer_res = infer_res
-            values$df = df
-                        
-            if (!is.null(res$sbml_data)) {
-                detach(res$sbml_data)
-            }
-            
-        })
-        
+        values$infer_res = infer_res
+        values$df = df
+                    
+        if (!is.null(res$sbml_data)) {
+            detach(res$sbml_data)
+        }
+
         output$diagnosticPlot = renderPlot({
 
             res = values$infer_res

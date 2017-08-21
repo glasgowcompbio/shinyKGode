@@ -302,9 +302,11 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, samp, noise) {
 
 }
 
-gradient_match <- function(kkk, y_no, ktype='rbf') {
+gradient_match <- function(kkk, y_no, ktype, progress) {
     
+    progress$set(message = "Gradient matching", value = 0)
     output = capture.output(rkgres <- rkg(kkk, y_no, ktype))
+    progress$inc(1, detail = "Completed")
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
     ode_par = kkk$ode_par
     
@@ -323,17 +325,21 @@ gradient_match <- function(kkk, y_no, ktype='rbf') {
     
 }
 
-gradient_match_third_step <- function(kkk, y_no, ktype='rbf') {
+gradient_match_third_step <- function(kkk, y_no, ktype, progress) {
 
+    progress$set(message = "Gradient matching", value = 0)
     output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
+    progress$inc(0.3, detail = "Cross-validating")
     crtype='i'  ## two methods fro third step  'i' fast method means iterative and '3' for slow method means 3rd step
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
     lamil1 = crossv(lam,kkk,bbb,crtype,y_no)
     lambdai1=lamil1[[1]]
-    
+
+    progress$inc(0.6, detail = "Third-step")
     output2 = capture.output(res <- third(lambdai1,kkk,bbb,crtype))
+    progress$inc(1, detail = "Completed")
     
     ode_par = res$oppar
     plot_x = list()
@@ -351,12 +357,18 @@ gradient_match_third_step <- function(kkk, y_no, ktype='rbf') {
     
 }
 
-warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
+warping <- function(kkk, y_no, peod, eps, progress) {
 
+    progress$set(message = "Gradient matching", value = 0)
     rkgres = rkg(kkk, y_no, ktype)
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
+
+    progress$inc(0.25, detail = "Initialise warping")
     fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
+    
+    progress$inc(0.5, detail = "Warping")
     output = capture.output(www <- warpfun(kkk, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
+    progress$inc(1, detail = "Completed")
     
     dtilda= www$dtilda
     bbbw = www$bbbw
@@ -379,11 +391,16 @@ warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     
 }
 
-third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
-    
+third_step_warping <- function(kkk, y_no, peod, eps, ktype, progress) {
+
+    progress$set(message = "Gradient matching", value = 0)
     rkgres = rkg(kkk, y_no, ktype)
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
+    
+    progress$inc(0.25, detail = "Initialise warping")
     fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
+    
+    progress$inc(0.5, detail = "Warping")
     kkkrkg = kkk$clone()
     output1 = capture.output(www <- warpfun(kkkrkg, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
     
@@ -398,10 +415,15 @@ third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     ####   warp   3rd
     crtype = 'i'
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
+    
+    progress$inc(0.75, detail = "Cross-validating")
     lamwil= crossv(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda) 
+    
+    progress$inc(0.9, detail = "Third-step")
     lambdawi=lamwil[[1]]
     output2 = capture.output(res <- third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
-
+    progress$inc(1, detail = "Completed")
+    
     ode_par = res$oppar
     plot_x = list()
     plot_y = list()
