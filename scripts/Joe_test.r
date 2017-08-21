@@ -59,6 +59,31 @@ res = gradient_match(kkk, y_no)
 print(res$ode_par)
 # sink()
 
+# 'f =' followed by any number of spaces, followed by a decimal number
+pattern = 'f =\\s+[0-9]*\\.?[0-9]*'
+m = gregexpr(pattern, res$output)
+regm = regmatches(res$output, m)
+costs = numeric()
+for (i in 1:length(regm)) {
+    match = regm[[i]]
+    if (length(match) > 0) {
+        x = unlist(strsplit(match, '='))
+        my_cost = as.numeric(trimws(x[2]))
+        costs = c(my_cost, costs)
+    }
+}
+costs = rev(costs)
+df = as.data.frame(costs)
+iterations = seq_along(costs)-1
+ggplot(data=df, aes(y=costs, x=iterations)) +
+    geom_line() +
+    geom_point() +
+    ggtitle('Optimisation Results') +
+    xlab("Iteration") +
+    ylab("f") +
+    theme_bw() + theme(text = element_text(size=20)) +
+    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+    
 attach(sbml_data)
 res = gradient_match_third_step(kkk, y_no)
 detach(sbml_data)

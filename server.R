@@ -25,7 +25,9 @@ shinyServer(function(input, output, session) {
     })    
 
     values <- reactiveValues(
-        upload_state = NULL
+        upload_state = NULL,
+        infer_res = NULL,
+        df = NULL
     )    
         
     getModel = reactive({
@@ -197,7 +199,6 @@ shinyServer(function(input, output, session) {
     observeEvent(input$inferBtn, {
         
         updateTabsetPanel(session, "inTabset", selected="results")        
-        output$resultsType = renderText({ "Parameter estimations:" })
 
         res = generateData()
         kkk = res$kkk
@@ -205,7 +206,7 @@ shinyServer(function(input, output, session) {
         
         model = getModel()
         nst = model$numSpecies
-        
+
         # for (st in 1:numSpecies)
         # {
         #     incProgress(st/numSpecies, detail=paste("System State", st))
@@ -232,17 +233,54 @@ shinyServer(function(input, output, session) {
                 infer_res = third_step_warping(kkk, y_no, peod, eps, ktype=input$ktype)                
             }
             
+            df = data.frame(parameters=infer_res$ode_par)
+            rownames(df) = model$params
+
+            values$infer_res = infer_res
+            values$df = df
+                        
             if (!is.null(res$sbml_data)) {
                 detach(res$sbml_data)
             }
             
-            print(infer_res)
-            x = infer_res$ode_par
-            df = data.frame(parameters=x)
-            rownames(df) = model$params
-
         })
         
+        output$diagnosticPlot = renderPlot({
+
+            res = values$infer_res
+                        
+            # 'f =' followed by any number of spaces, followed by a decimal number
+            pattern = 'f =\\s+[0-9]*\\.?[0-9]*'
+            m = gregexpr(pattern, res$output)
+            regm = regmatches(res$output, m)
+            costs = numeric()
+            for (i in 1:length(regm)) {
+                match = regm[[i]]
+                if (length(match) > 0) {
+                    x = unlist(strsplit(match, '='))
+                    my_cost = as.numeric(trimws(x[2]))
+                    costs = c(my_cost, costs)
+                }
+            }
+            costs = rev(costs)
+            
+            df = as.data.frame(costs)
+            iterations = seq_along(costs)-1
+            ggplot(data=df, aes(y=costs, x=iterations)) +
+                geom_line() +
+                geom_point() +
+                ggtitle('Optimisation Results') +
+                xlab("Iteration") +
+                ylab("f") +
+                theme_bw() + theme(text = element_text(size=20)) +
+                expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+            
+        })
+        
+        output$console = renderPrint({
+            return(print(values$infer_res$output))
+        })
+                
         output$resultsPlot = renderPlot({
 
             # plot them together -- THIS ISN'T WHAT WE WANT
@@ -254,12 +292,13 @@ shinyServer(function(input, output, session) {
             #     theme_bw() +
             #     theme(text = element_text(size=20))
 
+            res = values$infer_res
             pp = list()
             for (i in 1:infer_res$nst) {
                 
-                time = infer_res$plot_x[[i]]
-                y = infer_res$data[[i]]
-                intp = infer_res$plot_y[[i]]
+                time = res$plot_x[[i]]
+                y = res$data[[i]]
+                intp = res$plot_y[[i]]
                     
                 plot_df = data.frame(time)
                 plot_df$data = y
@@ -280,7 +319,7 @@ shinyServer(function(input, output, session) {
         })    
         
         output$resultsTable = renderTable({
-            df  
+            values$df
         }, rownames=T)
     
         shinyjs::show("downloadParamsBtn")
@@ -288,7 +327,7 @@ shinyServer(function(input, output, session) {
         output$downloadParamsBtn <- downloadHandler(
             filename = function() { 'params.csv' },
             content = function(file) {
-                write.csv(df, file)
+                write.csv(values$df, file)
             }
         )    
         

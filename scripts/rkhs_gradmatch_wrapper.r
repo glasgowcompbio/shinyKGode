@@ -325,7 +325,7 @@ gradient_match <- function(kkk, y_no, ktype='rbf') {
 
 gradient_match_third_step <- function(kkk, y_no, ktype='rbf') {
 
-    rkgres = rkg(kkk, y_no, ktype)
+    output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
     crtype='i'  ## two methods fro third step  'i' fast method means iterative and '3' for slow method means 3rd step
@@ -333,9 +333,7 @@ gradient_match_third_step <- function(kkk, y_no, ktype='rbf') {
     lamil1 = crossv(lam,kkk,bbb,crtype,y_no)
     lambdai1=lamil1[[1]]
     
-    # output = capture.output(res <- third(lambdai1,kkk,bbb,crtype))
-    output = ''
-    res <- third(lambdai1,kkk,bbb,crtype)
+    output2 = capture.output(res <- third(lambdai1,kkk,bbb,crtype))
     
     ode_par = res$oppar
     plot_x = list()
@@ -346,7 +344,8 @@ gradient_match_third_step <- function(kkk, y_no, ktype='rbf') {
         plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
         data[[i]] = res$rk3$rk[[i]]$y
     }
-    
+
+    output = paste(output1, output2, sep = "")
     return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
                 data=data, nst=length(plot_x)))
     
@@ -386,7 +385,7 @@ third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
     fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
     kkkrkg = kkk$clone()
-    output = capture.output(www <- warpfun(kkkrkg, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
+    output1 = capture.output(www <- warpfun(kkkrkg, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
     
     dtilda= www$dtilda
     bbbw = www$bbbw
@@ -401,7 +400,7 @@ third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
     lamwil= crossv(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda) 
     lambdawi=lamwil[[1]]
-    res = third(lambdawi,wkkk,bbbw,crtype,woption,dtilda)  ## add third step after warping
+    output2 = capture.output(res <- third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
 
     ode_par = res$oppar
     plot_x = list()
@@ -412,7 +411,8 @@ third_step_warping <- function(kkk, y_no, peod, eps, ktype='rbf') {
         plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
         data[[i]] = res$rk3$rk[[i]]$y
     }
-    
+
+    output = paste(output1, output2, sep = "")
     return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
                 data=data, nst=length(plot_x)))
     

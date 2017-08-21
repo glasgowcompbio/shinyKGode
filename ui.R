@@ -85,7 +85,6 @@ shinyUI(fluidPage(
                ),
                tabPanel(title="Results",
                         value="results",
-                        verbatimTextOutput("resultsType"),
                         plotOutput('resultsPlot'),
                         tableOutput('resultsTable'),
                         shinyjs::hidden(
@@ -97,7 +96,9 @@ shinyUI(fluidPage(
                ),
                tabPanel(title="Diagnostics",
                         value="diagnostics",
-                        tableOutput('table3')
+                        plotOutput('diagnosticPlot'),
+                        h5("Console log"),
+                        verbatimTextOutput("console")
                )
            )               
         )
