@@ -211,7 +211,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
     
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, numSpecies), noise*diag(numSpecies)) 
-    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv)
     res
 
 }
@@ -297,112 +297,172 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, samp, noise) {
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates),noise*diag(mi$nStates))
     
     sbml_data = list(model=model, mi=mi, initial_names=initial_names)
-    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv)
     res
 
 }
 
-gradient_match <- function(kkk, y_no, ktype, progress) {
-    
-    progress$set(message = "Gradient matching", value = 0)
-    output = capture.output(rkgres <- rkg(kkk, y_no, ktype))
-    progress$inc(1, detail = "Completed")
-    bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
-    ode_par = kkk$ode_par
-    
-    plot_x = list()
-    plot_y = list()
-    data = list()
-    for (i in 1:length(bbb)) { 
-        print(bbb[[i]])
-        plot_x[[i]] = bbb[[i]]$t 
-        plot_y[[i]] = rkgres$intp[i, ]        
-        data[[i]] = bbb[[i]]$y
-    }
+get_grid <- function(tinterv, n) {
 
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
-                data=data, nst=length(plot_x)))
+    # https://stackoverflow.com/questions/19689397/extracting-breakpoints-with-intervals-closed-on-the-left    
+    labs <- levels(cut(tinterv, n))
+    x = cbind(lower = as.numeric( sub("\\((.+),.*", "\\1", labs) ), upper = as.numeric( sub("[^,]*,([^]]*)\\]", "\\1", labs) ))
+    grids = x[, 2]
+    return(grids)
     
 }
 
-gradient_match_third_step <- function(kkk, y_no, ktype, progress) {
+update_status <- function(progress, msg, msg_type, val) {
+    if (!is.null(progress)) { 
+        if (msg_type == 'start') {
+            progress$set(message=msg, value=val)
+        } else if (msg_type == 'inc') {
+            progress$inc(val, detail=msg)
+        }
+    } else {
+        print(msg)
+    }
+}
 
-    progress$set(message = "Gradient matching", value = 0)
+parse_objectives <- function(output) {
+    
+    # 'f =' followed by any number of spaces, followed by a decimal number
+    pattern = 'f =\\s+[0-9]*\\.?[0-9]*'
+    m = gregexpr(pattern, output)
+    regm = regmatches(output, m)
+    objectives = numeric()
+    for (i in 1:length(regm)) {
+        match = regm[[i]]
+        if (length(match) > 0) {
+            x = unlist(strsplit(match, '='))
+            my_obj = as.numeric(trimws(x[2]))
+            objectives = c(my_obj, objectives)
+        }
+    }
+    objectives = rev(objectives)
+    return(objectives)
+    
+}
+
+gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
+
+    update_status(progress, 'Gradient matching', 'start', 0)    
+    output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
+    update_status(progress, 'Completed', 'inc', 1)
+    bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
+    ode_par = kkk$ode_par
+    
+    grids = get_grid(tinterv, 2000)
+    intp_x = list()
+    intp_y = list()
+    data_x = list()
+    data_y = list()
+    for (i in 1:length(bbb)) { 
+        print(bbb[[i]])
+        intp_x[[i]] = grids
+        intp_y[[i]] = bbb[[i]]$predictT(grids)$pred
+        data_x[[i]] = bbb[[i]]$t 
+        data_y[[i]] = bbb[[i]]$y
+    }
+
+    objectives = parse_objectives(output1)
+    return(list(ode_par=ode_par, output=output1, objectives=objectives,
+                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                nst=length(intp_x)))
+    
+}
+
+gradient_match_third_step <- function(kkk, tinterv, y_no, ktype, progress) {
+
+    update_status(progress, 'Gradient matching', 'start', 0)    
     output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
-    progress$inc(0.3, detail = "Cross-validating")
+    update_status(progress, 'Cross-validating', 'inc', 0.3)
     crtype='i'  ## two methods fro third step  'i' fast method means iterative and '3' for slow method means 3rd step
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
     lamil1 = crossv(lam,kkk,bbb,crtype,y_no)
     lambdai1=lamil1[[1]]
 
-    progress$inc(0.6, detail = "Third-step")
+    update_status(progress, 'Third-step', 'inc', 0.6)
     output2 = capture.output(res <- third(lambdai1,kkk,bbb,crtype))
-    progress$inc(1, detail = "Completed")
-    
+    update_status(progress, 'Completed', 'inc', 1)
     ode_par = res$oppar
-    plot_x = list()
-    plot_y = list()
-    data = list()
+    
+    grids = get_grid(tinterv, 2000)
+    intp_x = list()
+    intp_y = list()
+    data_x = list()
+    data_y = list()
     for (i in 1:length(res$rk3$rk)) { 
-        plot_x[[i]] = res$rk3$rk[[i]]$t 
-        plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
-        data[[i]] = res$rk3$rk[[i]]$y
+        intp_x[[i]] = grids
+        intp_y[[i]] = res$rk3$rk[[i]]$predictT(grids)$pred
+        data_y[[i]] = res$rk3$rk[[i]]$y
+        data_x[[i]] = res$rk3$rk[[i]]$t
     }
 
     output = paste(output1, output2, sep = "")
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
-                data=data, nst=length(plot_x)))
+    objectives = parse_objectives(output1)
+    return(list(ode_par=ode_par, output=output, objectives=objectives,
+                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                nst=length(intp_x)))
     
 }
 
-warping <- function(kkk, y_no, peod, eps, progress) {
+warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
 
-    progress$set(message = "Gradient matching", value = 0)
-    rkgres = rkg(kkk, y_no, ktype)
+    update_status(progress, 'Gradient matching', 'start', 0)    
+    output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
-    progress$inc(0.25, detail = "Initialise warping")
-    fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
-    
-    progress$inc(0.5, detail = "Warping")
-    output = capture.output(www <- warpfun(kkk, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
-    progress$inc(1, detail = "Completed")
+    update_status(progress, 'Initialise warping', 'inc', 0.25)
+    output2 = capture.output(fixlens <- warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
+
+    update_status(progress, 'Warping', 'inc', 0.5)
+    output3 = capture.output(www <- warpfun(kkk, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
+    update_status(progress, 'Completed', 'inc', 1)
     
     dtilda= www$dtilda
     bbbw = www$bbbw
     resmtest = www$wtime
     wfun=www$wfun
     wkkk = www$wkkk
-    
     ode_par = wkkk$ode_par
-    plot_x = list()
-    plot_y = list()
-    data = list()
+    
+    grids = get_grid(tinterv, 2000)
+    intp_x = list()
+    intp_y = list()
+    data_x = list()
+    data_y = list()
     for (i in 1:length(bbbw)) { 
-        plot_x[[i]] = resmtest[i, ] 
-        plot_y[[i]] = bbbw[[i]]$predict()$pred
-        data[[i]] = bbbw[[i]]$y
+        wgrids = wfun[[i]]$predictT(grids)$pred ## denser grid in warped domain
+        intp_x[[i]] = grids
+        intp_y[[i]] = bbbw[[i]]$predictT(wgrids)$pred
+        data_x[[i]] = bbb[[i]]$t
+        data_y[[i]] = bbb[[i]]$y
     }
 
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
-                data=data, nst=length(plot_x)))
+    output = paste(output1, output2, output3, sep = "")
+    objectives = parse_objectives(output1)
+    return(list(ode_par=ode_par, output=output, objectives=objectives,
+                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                nst=length(intp_x)))
+    
     
 }
 
-third_step_warping <- function(kkk, y_no, peod, eps, ktype, progress) {
+third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
 
-    progress$set(message = "Gradient matching", value = 0)
-    rkgres = rkg(kkk, y_no, ktype)
+    update_status(progress, 'Gradient matching', 'start', 0)    
+    output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
+
+    update_status(progress, 'Initialise warping', 'inc', 0.25)    
+    output2 = capture.output(fixlens <- warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
     
-    progress$inc(0.25, detail = "Initialise warping")
-    fixlens=warpInitLen(peod, eps, rkgres) ## find the start value for the warping basis function.
-    
-    progress$inc(0.5, detail = "Warping")
+    update_status(progress, 'Warping', 'inc', 0.50)    
     kkkrkg = kkk$clone()
-    output1 = capture.output(www <- warpfun(kkkrkg, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
+    output3 = capture.output(www <- warpfun(kkkrkg, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
     
     dtilda= www$dtilda
     bbbw = www$bbbw
@@ -415,27 +475,34 @@ third_step_warping <- function(kkk, y_no, peod, eps, ktype, progress) {
     ####   warp   3rd
     crtype = 'i'
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
-    
-    progress$inc(0.75, detail = "Cross-validating")
-    lamwil= crossv(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda) 
-    
-    progress$inc(0.9, detail = "Third-step")
-    lambdawi=lamwil[[1]]
-    output2 = capture.output(res <- third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
-    progress$inc(1, detail = "Completed")
-    
-    ode_par = res$oppar
-    plot_x = list()
-    plot_y = list()
-    data = list()
-    for (i in 1:length(res$rk3$rk)) { 
-        plot_x[[i]] = res$rk3$rk[[i]]$t 
-        plot_y[[i]] = res$rk3$rk[[i]]$predict()$pred
-        data[[i]] = res$rk3$rk[[i]]$y
-    }
 
-    output = paste(output1, output2, sep = "")
-    return(list(ode_par=ode_par, output=output, plot_x=plot_x, plot_y=plot_y, 
-                data=data, nst=length(plot_x)))
+    update_status(progress, 'Cross-validating', 'inc', 0.75)    
+    output4 = capture.output(lamwil <- crossv(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda)) 
+    
+    update_status(progress, 'Third-step', 'inc', 0.90)    
+    lambdawi=lamwil[[1]]
+    output5 = capture.output(res <- third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
+    progress$inc(1, detail = "Completed")
+    ode_par = res$oppar
+    
+    grids = get_grid(tinterv, 2000)
+    intp_x = list()
+    intp_y = list()
+    data_x = list()
+    data_y = list()
+    for (i in 1:length(res$rk3$rk)) { 
+        wgrid = wfun[[i]]$predictT(grids)$pred
+        intp_x[[i]] = grids
+        intp_y[[i]] = res$rk3$rk[[i]]$predictT(wgrid)$pred
+        data_x[[i]] = bbb[[i]]$t
+        data_y[[i]] = bbb[[i]]$y
+    }
+    
+    output = paste(output1, output2, output3, output4, output5, sep = "")
+    objectives = parse_objectives(output1)
+    return(list(ode_par=ode_par, output=output, objectives=objectives,
+                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                nst=length(intp_x)))
+    
     
 }

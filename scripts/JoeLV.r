@@ -46,7 +46,7 @@ source('/Users/joewandy/git/rkhs_gradmatch/rkg.r')
 ##################  generate data  #################################### 
 kkk0 = ode$new(2,fun=LV_fun,grfun=LV_grlNODE)
 xinit = as.matrix(c(0.5,1))
-tinterv = c(0,6)
+tinterv = c(0,10)
 kkk0$solve_ode(c(1,1,4,1),xinit,tinterv) 
 
 
@@ -67,6 +67,14 @@ rkgres = rkg(kkk,y_no,ktype)
 bbb = rkgres$bbb
 
 kkk$ode_par
+plot(bbb[[1]]$t,rkgres$intp[1,],type='l')              ## plot interpolation with time points for data 
+plot(kkk0$t,bbb[[1]]$predictT(kkk0$t)$pred,type='l')   ## plot interpolation with denser grids
+
+aaa = tinterv
+labs <- levels(cut(aaa, 2000))
+x = cbind(lower = as.numeric( sub("\\((.+),.*", "\\1", labs) ), upper = as.numeric( sub("[^,]*,([^]]*)\\]", "\\1", labs) ))
+grids = x[, 2]
+plot(grids, bbb[[1]]$predictT(grids)$pred,type='l')   ## plot interpolation with denser grids
 
 ############# gradient matching + thrid step
 crtype='i'
@@ -85,7 +93,7 @@ eps= 1          ## the standard deviation of period
 fixlens=warpInitLen(peod,eps,rkgres)
 
 kkkrkg = kkk$clone()
-www = warpfun(kkkrkg,p0,bbb,eps,fixlens,kkkrkg$t)
+www = warpfun(kkkrkg,p0,bbb,peod,eps,fixlens,kkkrkg$t,y_no)
 
 dtilda= www$dtilda
 bbbw = www$bbbw
@@ -94,6 +102,15 @@ wfun=www$wfun
 wkkk = www$wkkk
 
 wkkk$ode_par
+
+plot(kkk$t,resmtest[1,],type='l')   ## plotting function
+
+plot(resmtest[1,],bbbw[[1]]$predict()$pred,type='l')  ## plot interpolation in warped time domain
+plot(kkk$t,bbbw[[1]]$predict()$pred,type='l')  ## plot interpolation in original time domain
+
+wgrid = wfun[[1]]$predictT(kkk0$t)$pred ## denser grid in warped domain
+plot( kkk0$t, bbbw[[1]]$predictT(wgrid)$pred,type='l') ## plot interpolatin with denser grid in original domain
+
 
 ##### 3rd step + warp
 woption='w'

@@ -1,11 +1,11 @@
-source('rkhs_gradmatch_wrapper.r')
+source('/Users/joewandy/git/rkhs_gradmatch_gui/scripts/rkhs_gradmatch_wrapper.r')
 
 SEED = 19537
 set.seed(SEED)
 
 ## try Lotka-Volterra model
 
-f = '../SBML/LotkaVolterra.xml';
+f = '/Users/joewandy/git/rkhs_gradmatch_gui/SBML/LotkaVolterra.xml';
 noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
 samp = 2
 xinit = as.matrix(c(0.5,1))
@@ -16,12 +16,14 @@ res = generate_data_from_sbml(f, xinit, tinterv, params, samp, noise)
 kkk = res$kkk
 y_no = res$y_no
 sbml_data = res$sbml_data
+ktype = 'rbf'
+progress = NULL
 
 # gradient matching
-res = gradient_match(kkk, y_no)
+res = gradient_match(kkk, tinterv, y_no, ktype, progress)
 print(res$ode_par)
 for (i in 1:res$nst) {
-    plot(res$plot_x[[i]], res$plot_y[[i]], type='l')
+    plot(res$intp_x[[i]], res$intp_y[[i]], type='l')
 }
 
 # gradient matching + 3rd step

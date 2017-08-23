@@ -102,11 +102,6 @@ shinyServer(function(input, output, session) {
     
     observeEvent(input$sbml_file, {
 
-        # updateSelectInput(session, "selected_model", 
-        #                   label = "Select predefined models",
-        #                   choices = modelChoices,
-        #                   selected = head(modelChoices, 1))               
-
         values$upload_state <- 'uploaded'
         sbml = getModel()
         showModel(input, output, 
@@ -175,7 +170,8 @@ shinyServer(function(input, output, session) {
                 pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
                     geom_point(data=subset(plot_df, state==species), color="red") + 
                     ggtitle(title) + 
-                    theme_bw() + theme(text = element_text(size=20))
+                    theme_bw() + theme(text = element_text(size=20)) + 
+                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
 
             }
             do.call(grid.arrange, pp)
@@ -203,6 +199,7 @@ shinyServer(function(input, output, session) {
         res = generateData()
         kkk = res$kkk
         y_no = res$y_no
+        tinterv = res$tinterv
         
         model = getModel()
         nst = model$numSpecies
@@ -215,17 +212,17 @@ shinyServer(function(input, output, session) {
         }
         
         if (input$method == "gm") {
-            infer_res = gradient_match(kkk, y_no, input$ktype, progress)
+            infer_res = gradient_match(kkk, tinterv, y_no, input$ktype, progress)
         } else if (input$method == "gm+3rd") {
-            infer_res = gradient_match_third_step(kkk, y_no, input$ktype, progress)
+            infer_res = gradient_match_third_step(kkk, tinterv, y_no, input$ktype, progress)
         } else if (input$method == "warping") {
             peod = get_values(input, 'p0_', nst, model$species)
             eps = input$eps
-            infer_res = warping(kkk, y_no, peod, eps, input$ktype, progress)                
+            infer_res = warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
         } else if (input$method == "3rd+warping") {
             peod = get_values(input, 'p0_', nst, model$species)
             eps = input$eps
-            infer_res = third_step_warping(kkk, y_no, peod, eps, input$ktype, progress)                
+            infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
         }
         
         df = data.frame(parameters=infer_res$ode_par)
@@ -241,30 +238,16 @@ shinyServer(function(input, output, session) {
         output$diagnosticPlot = renderPlot({
 
             res = values$infer_res
-                        
-            # 'f =' followed by any number of spaces, followed by a decimal number
-            pattern = 'f =\\s+[0-9]*\\.?[0-9]*'
-            m = gregexpr(pattern, res$output)
-            regm = regmatches(res$output, m)
-            costs = numeric()
-            for (i in 1:length(regm)) {
-                match = regm[[i]]
-                if (length(match) > 0) {
-                    x = unlist(strsplit(match, '='))
-                    my_cost = as.numeric(trimws(x[2]))
-                    costs = c(my_cost, costs)
-                }
-            }
-            costs = rev(costs)
-            
-            df = as.data.frame(costs)
-            iterations = seq_along(costs)-1
-            ggplot(data=df, aes(y=costs, x=iterations)) +
-                geom_line() +
+            objectives = res$objectives
+
+            df = as.data.frame(objectives)
+            iterations = seq_along(objectives)-1
+            ggplot(data=df, aes(y=objectives, x=iterations)) +
+                geom_line(size=1) +
                 geom_point() +
                 ggtitle('Optimisation Results') +
                 xlab("Iteration") +
-                ylab("f") +
+                ylab("Objective (f)") +
                 theme_bw() + theme(text = element_text(size=20)) +
                 expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
             
@@ -276,36 +259,39 @@ shinyServer(function(input, output, session) {
                 
         output$resultsPlot = renderPlot({
 
-            # plot them together -- THIS ISN'T WHAT WE WANT
-            # y = c(resb1$pred, resb2$pred)
-            # plot_df = data.frame(t(intp))
-            # plot_df$time = kkk$t 
-            # plot_df = melt(plot_df, id.vars='time', variable.name='states')
-            # ggplot(aes(y=value, x=time, colour=states), data=plot_df) + geom_line() + 
-            #     theme_bw() +
-            #     theme(text = element_text(size=20))
-
             res = values$infer_res
             pp = list()
-            for (i in 1:infer_res$nst) {
+            for (i in 1:res$nst) {
                 
-                time = res$plot_x[[i]]
-                y = res$data[[i]]
-                intp = res$plot_y[[i]]
-                    
-                plot_df = data.frame(time)
-                plot_df$data = y
-                plot_df$interpolated = intp
-                plot_df = melt(plot_df, id.vars='time', variable.name='type')
+                intp_x = res$intp_x[[i]]
+                intp_y = res$intp_y[[i]]
+                data_x = res$data_x[[i]]
+                data_y = res$data_y[[i]]
+                
+                time = intp_x
+                plot_df1 = data.frame(time)
+                plot_df1$interpolated = intp_y
+                plot_df1 = melt(plot_df1, id.vars='time', variable.name='type')
+                
+                time = data_x
+                plot_df2 = data.frame(time)
+                plot_df2$observed = data_y
+                plot_df2 = melt(plot_df2, id.vars='time', variable.name='type')
+                
+                plot_df = rbind(plot_df1, plot_df2)
+                temp1 = subset(plot_df, type=='observed')
+                temp2 = subset(plot_df, type=='interpolated')
                 
                 title = paste('State', model$species[i], sep=' ')
-                pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
-                    geom_point(data=subset(plot_df, type=='data'), aes(color='data')) + 
-                    geom_line(data=subset(plot_df, type=='interpolated'), aes(color='interpolated')) +
-                    ggtitle(title) + 
-                    theme_bw() + theme(text = element_text(size=20)) + 
-                    scale_colour_manual(name="Legend", values=c(data="red", interpolated="blue"))                    
-            
+                g = ggplot() + 
+                    geom_point(data=temp1, aes(x=time, y=value, colour='red')) +
+                    geom_line(data=temp2, aes(x=time, y=value, colour='blue'), size=1) +
+                    ggtitle(title) +
+                    theme_bw() + theme(text = element_text(size=20)) +
+                    scale_colour_manual(name="Legend", values=c("red", "blue"), labels=c('Interpolated', 'Observed')) +
+                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+                
+                pp[[i]] = g            
             }
             do.call(grid.arrange, pp)
 
@@ -325,26 +311,5 @@ shinyServer(function(input, output, session) {
         )    
         
     })
-    
-    output$cond = renderText({
-        paste0("State1=", input$Sample, ", State2=",input$Sample1)
-    })
-    
-    # observeEvent(input$helpLink, {
-    #     showModal(modalDialog(
-    #         title = "Parameter Constraint Syntax",
-    #         "You can specify 
-    #         (1) equality constraint, 
-    #         (2) Parameter drawn from Gaussian with given mean and variance,
-    #         (3) Parameter drawn from Gamma with given shape and scale,
-    #         (4) Parameter drawn from Uniform with given bounds.",
-    #         easyClose = TRUE,
-    #         footer = NULL
-    #     ))
-    # })    
-
-    output$table1 = renderTable(iris)
-    
-    output$table2 = renderTable(iris)
     
 })
