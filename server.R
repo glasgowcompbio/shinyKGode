@@ -194,6 +194,7 @@ shinyServer(function(input, output, session) {
     
     observeEvent(input$inferBtn, {
         
+        shinyjs::disable("inferBtn")
         updateTabsetPanel(session, "inTabset", selected="results")        
 
         res = generateData()
@@ -240,9 +241,10 @@ shinyServer(function(input, output, session) {
             res = values$infer_res
             objectives = res$objectives
 
+            # plot the objective function for gradient matching
             df = as.data.frame(objectives)
             iterations = seq_along(objectives)-1
-            ggplot(data=df, aes(y=objectives, x=iterations)) +
+            g = ggplot(data=df, aes(y=objectives, x=iterations)) +
                 geom_line(size=1) +
                 geom_point() +
                 ggtitle('Optimisation Results') +
@@ -250,6 +252,35 @@ shinyServer(function(input, output, session) {
                 ylab("Objective (f)") +
                 theme_bw() + theme(text = element_text(size=20)) +
                 expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+
+            pp = list()
+            pp[[1]] = g
+
+            # plot the warping functions for each state, if we have them
+            if (!is.null(res$warpfun_x[[1]])) {
+                
+                for (i in 1:res$nst) {
+                    
+                    warpfun_x = res$warpfun_x[[i]]
+                    warpfun_y = res$warpfun_y[[i]]
+                    
+                    title = paste('State', model$species[i], ' - Warping', sep=' ')
+                    warp_df = as.data.frame(warpfun_x)
+                    warp_df$warpfun_y = warpfun_y
+                    g = ggplot() +
+                        geom_line(data=warp_df, aes(x=warpfun_x, y=warpfun_y), size=1) +
+                        ggtitle(title) + 
+                        theme_bw() + theme(text = element_text(size=20)) +
+                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+                    
+                    pp[[i+1]] = g
+
+                }
+                
+            }
+                
+            # show all the plots
+            do.call(grid.arrange, pp)
             
         })
         
@@ -267,7 +298,7 @@ shinyServer(function(input, output, session) {
                 intp_y = res$intp_y[[i]]
                 data_x = res$data_x[[i]]
                 data_y = res$data_y[[i]]
-                
+
                 time = intp_x
                 plot_df1 = data.frame(time)
                 plot_df1$interpolated = intp_y
@@ -291,7 +322,8 @@ shinyServer(function(input, output, session) {
                     scale_colour_manual(name="Legend", values=c("red", "blue"), labels=c('Interpolated', 'Observed')) +
                     expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
                 
-                pp[[i]] = g            
+                pp[[i]] = g
+
             }
             do.call(grid.arrange, pp)
 
@@ -302,6 +334,7 @@ shinyServer(function(input, output, session) {
         }, rownames=T)
     
         shinyjs::show("downloadParamsBtn")
+        shinyjs::enable("inferBtn")
         
         output$downloadParamsBtn <- downloadHandler(
             filename = function() { 'params.csv' },

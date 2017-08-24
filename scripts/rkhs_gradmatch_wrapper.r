@@ -347,7 +347,7 @@ parse_objectives <- function(output) {
 gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
 
     update_status(progress, 'Gradient matching', 'start', 0)    
-    output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
+    output = capture.output(rkgres <- rkg(kkk, y_no, ktype))
     update_status(progress, 'Completed', 'inc', 1)
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
     ode_par = kkk$ode_par
@@ -365,9 +365,10 @@ gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
         data_y[[i]] = bbb[[i]]$y
     }
 
-    objectives = parse_objectives(output1)
-    return(list(ode_par=ode_par, output=output1, objectives=objectives,
+    objectives = parse_objectives(output)
+    return(list(ode_par=ode_par, output=output, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                warpfun_x=NULL, warpfun_y=NULL,
                 nst=length(intp_x)))
     
 }
@@ -401,10 +402,11 @@ gradient_match_third_step <- function(kkk, tinterv, y_no, ktype, progress) {
         data_x[[i]] = res$rk3$rk[[i]]$t
     }
 
-    output = paste(output1, output2, sep = "")
+    output = c(output1, output2)
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                warpfun_x=NULL, warpfun_y=NULL,
                 nst=length(intp_x)))
     
 }
@@ -429,23 +431,30 @@ warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     wkkk = www$wkkk
     ode_par = wkkk$ode_par
     
+    plot(kkk$t,resmtest[1,],type='l')   ## plotting function
+    
     grids = get_grid(tinterv, 2000)
     intp_x = list()
     intp_y = list()
     data_x = list()
     data_y = list()
+    warpfun_x = list()
+    warpfun_y = list()
     for (i in 1:length(bbbw)) { 
         wgrids = wfun[[i]]$predictT(grids)$pred ## denser grid in warped domain
         intp_x[[i]] = grids
         intp_y[[i]] = bbbw[[i]]$predictT(wgrids)$pred
         data_x[[i]] = bbb[[i]]$t
         data_y[[i]] = bbb[[i]]$y
+        warpfun_x[[i]] = kkk$t
+        warpfun_y[[i]] = resmtest[i, ]
     }
 
-    output = paste(output1, output2, output3, sep = "")
+    output = c(output1, output2, output3)
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output, objectives=objectives,
-                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y, 
+                warpfun_x=warpfun_x, warpfun_y=warpfun_y,
                 nst=length(intp_x)))
     
     
@@ -498,10 +507,11 @@ third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
         data_y[[i]] = bbb[[i]]$y
     }
     
-    output = paste(output1, output2, output3, output4, output5, sep = "")
+    output = c(output1, output2, output3, output4, output5)
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
+                warpfun_x=NULL, warpfun_y=NULL,
                 nst=length(intp_x)))
     
     
