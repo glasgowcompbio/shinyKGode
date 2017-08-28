@@ -122,25 +122,24 @@ shinyServer(function(input, output, session) {
     
     getData = reactive({
 
+        model = getModel()
+        params = get_values(input, 'param_val', model$numParams, model$params)
+        
         if (is.null(values$data_from)) {
             
             res = NULL
             
         } else if (values$data_from == 'uploaded') {
 
-            model = getModel()
             csv_file = input$csv_file$datapath
             sbml_file = input$sbml_file$datapath
-            res = get_data_from_csv(csv_file, sbml_file, model, values$model_from, input$selected_model)
+            res = get_data_from_csv(csv_file, sbml_file, params, values$model_from, input$selected_model)
             
         } else if (values$data_from == 'generated') {
 
+            xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
             noise = input$snr  ## TODO: change from variance to SNR 
             tinterv = c(input$timePointsMin, input$timePointsMax)
-            
-            model = getModel()
-            xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
-            params = get_values(input, 'param_val', model$numParams, model$params)
             
             if (values$model_from == 'uploaded') { # extract from the SBML file
                 

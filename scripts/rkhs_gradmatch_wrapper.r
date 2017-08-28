@@ -250,17 +250,18 @@ load_sbml <- function(f) {
     
 }
 
-get_data_from_csv <- function(csv_file, sbml_file, model, model_from, selected_model) {
+get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_model) {
 
     df <- read.csv(file=csv_file, header=TRUE, sep=",")
     x = as.matrix(df)
 
     init_time = x[, 1]
     y_no = x[, 2:ncol(x)]
-    init_par = rep(c(0.1), model$numParams)
+    init_par = rep(c(0.1), length(params))
 
     if (model_from == 'uploaded') { # extract from the SBML file
-        ode_fun = get_ode_fun(sbml_file, model$params)
+        res = get_ode_fun(sbml_file, params)
+        ode_fun = res$ode_fun
     } else if (model_from == 'selected') {
         if (selected_model == "lv") {
             ode_fun = LV_fun
@@ -274,6 +275,8 @@ get_data_from_csv <- function(csv_file, sbml_file, model, model_from, selected_m
     }
     
     tinterv = c(min(init_time), max(init_time))
+    print(ode_fun)
+    print(tinterv)
     kkk = ode$new(1, fun=ode_fun, t=init_time, ode_par=init_par, y_ode=t(y_no))
     res = list(time=init_time, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv)
     res
