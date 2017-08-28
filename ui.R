@@ -39,10 +39,7 @@ shinyUI(fluidPage(
                helpText(("Time Points.")),
                fluidRow(
                    column(6, numericInput("timePointsMin", "Min", value=0, min=0, max=NA, step=1)),
-                   column(6, numericInput("timePointsMax", "Max", value=6, min=0, max=NA, step=1))
-               ),
-               fluidRow(
-                   column(6, numericInput("noOfSamples", "Num. Replicates", value=1, min=0, max=NA, step=1)),
+                   column(6, numericInput("timePointsMax", "Max", value=6, min=0, max=NA, step=1)),
                    column(6, numericInput("snr", "SNR", value=0.1, min=0, max=NA, step=0.1))
                ),
                # shinyjs::disabled(
@@ -76,7 +73,7 @@ shinyUI(fluidPage(
                                "Gradient Matching"="gm", 
                                "Gradient Matching + 3rd Step"="gm+3rd",
                                "Warping"="warping",
-                               "3rd Step + Warping"="3rd+warping"
+                               "Warping + 3rd Step"="3rd+warping"
                            ), inline=F),
                            shinyjs::disabled(
                                actionButton("inferBtn", "Infer")
@@ -85,6 +82,7 @@ shinyUI(fluidPage(
                ),
                tabPanel(title="Results",
                         value="results",
+                        verbatimTextOutput('resultsType'),
                         plotOutput('resultsPlot'),
                         tableOutput('resultsTable'),
                         shinyjs::hidden(

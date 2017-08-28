@@ -250,8 +250,38 @@ load_sbml <- function(f) {
     
 }
 
-generate_data_from_sbml <- function(f, xinit, tinterv, params, samp, noise) {
+get_data_from_csv <- function(csv_file, sbml_file, model, model_from, selected_model) {
 
+    df <- read.csv(file=csv_file, header=TRUE, sep=",")
+    x = as.matrix(df)
+
+    init_time = x[, 1]
+    y_no = x[, 2:ncol(x)]
+    init_par = rep(c(0.1), model$numParams)
+
+    if (model_from == 'uploaded') { # extract from the SBML file
+        ode_fun = get_ode_fun(sbml_file, model$params)
+    } else if (model_from == 'selected') {
+        if (selected_model == "lv") {
+            ode_fun = LV_fun
+        } else if (selected_model == "fhg") {
+            ode_fun = FN_fun
+        } else if (selected_model == 'bp') {
+            ode_fun = BP_fun
+        } else {
+            ode_fun = NULL
+        }
+    }
+    
+    tinterv = c(min(init_time), max(init_time))
+    kkk = ode$new(1, fun=ode_fun, t=init_time, ode_par=init_par, y_ode=t(y_no))
+    res = list(time=init_time, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv)
+    res
+    
+}
+
+get_ode_fun <- function(f, params) {
+    
     model = SBMLR:::readSBML(f)
     mi = summary(model)
     initial_names = names(params)
@@ -283,8 +313,20 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, samp, noise) {
         xp
         
     }
+
+    return(list(model=model, mi=mi, ode_fun=ode_fun))    
     
-    kkk0 = ode$new(samp, fun=ode_fun)
+}
+
+generate_data_from_sbml <- function(f, xinit, tinterv, params, pick, noise) {
+
+    res = get_ode_fun(f, params)
+    model = res$model
+    mi = res$mi
+    ode_fun = res$ode_fun
+    initial_names = names(params)
+    
+    kkk0 = ode$new(pick, fun=ode_fun)
     xinit = as.matrix(mi$S0)
     kkk0$solve_ode(par_ode=params, xinit, tinterv)
     
@@ -294,7 +336,7 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, samp, noise) {
     kkk = ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     n_o = max( dim( kkk$y_ode) )
-    y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates),noise*diag(mi$nStates))
+    y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates), noise*diag(mi$nStates))
     
     sbml_data = list(model=model, mi=mi, initial_names=initial_names)
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv)
@@ -347,7 +389,7 @@ parse_objectives <- function(output) {
 gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
 
     update_status(progress, 'Gradient matching', 'start', 0)    
-    output = capture.output(rkgres <- rkg(kkk, y_no, ktype))
+    output1 = capture.output(rkgres <- rkg(kkk, y_no, ktype))
     update_status(progress, 'Completed', 'inc', 1)
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
     ode_par = kkk$ode_par
@@ -365,8 +407,8 @@ gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
         data_y[[i]] = bbb[[i]]$y
     }
 
-    objectives = parse_objectives(output)
-    return(list(ode_par=ode_par, output=output, objectives=objectives,
+    objectives = parse_objectives(output1)
+    return(list(ode_par=ode_par, output=output1, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
                 warpfun_x=NULL, warpfun_y=NULL,
                 nst=length(intp_x)))
@@ -421,7 +463,7 @@ warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     output2 = capture.output(fixlens <- warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
 
     update_status(progress, 'Warping', 'inc', 0.5)
-    output3 = capture.output(www <- warpfun(kkk, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
+    output3 = capture.output(www <- warpfun(kkk, bbb, peod, eps, fixlens, y_no, kkk$t))
     update_status(progress, 'Completed', 'inc', 1)
     
     dtilda= www$dtilda
@@ -471,7 +513,7 @@ third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     
     update_status(progress, 'Warping', 'inc', 0.50)    
     kkkrkg = kkk$clone()
-    output3 = capture.output(www <- warpfun(kkkrkg, p0, bbb, peod, eps, fixlens, kkk$t, y_no))
+    output3 = capture.output(www <- warpfun(kkkrkg, bbb, peod, eps, fixlens, y_no,kkk$t))
     
     dtilda= www$dtilda
     bbbw = www$bbbw

@@ -46,8 +46,8 @@ source('/Users/joewandy/git/rkhs_gradmatch/rkg.r')
 ##################  generate data  #################################### 
 kkk0 = ode$new(2,fun=LV_fun,grfun=LV_grlNODE)
 xinit = as.matrix(c(0.5,1))
-tinterv = c(0,10)
-kkk0$solve_ode(c(1,1,4,1),xinit,tinterv) 
+tinterv = c(0,20)
+kkk0$solve_ode(c(1.00,0.4,1.00,0.20),xinit,tinterv) 
 
 
 ##################################################################

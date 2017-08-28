@@ -25,18 +25,19 @@ shinyServer(function(input, output, session) {
     })    
 
     values <- reactiveValues(
-        upload_state = NULL,
+        model_from = NULL,
+        data_from = NULL,
         infer_res = NULL,
         df = NULL
     )    
         
     getModel = reactive({
 
-        if (is.null(values$upload_state)) {
+        if (is.null(values$model_from)) {
             res = NULL
-        } else if (values$upload_state == 'uploaded') {
+        } else if (values$model_from == 'uploaded') {
             res = get_initial_values_sbml(input$sbml_file)
-        } else if (values$upload_state == 'selected') {
+        } else if (values$model_from == 'selected') {
             res = get_initial_values_selected(input$selected_model)
         }
         return(res)
@@ -87,7 +88,7 @@ shinyServer(function(input, output, session) {
     
     observeEvent(input$selected_model, {
 
-        values$upload_state <- 'selected'
+        values$model_from <- 'selected'
         res = getModel()
         
         if (!is.null(res)) { # load one of the three pre-defined models, null otherwise
@@ -102,14 +103,14 @@ shinyServer(function(input, output, session) {
     
     observeEvent(input$sbml_file, {
 
-        values$upload_state <- 'uploaded'
+        values$model_from <- 'uploaded'
         sbml = getModel()
         showModel(input, output, 
                   sbml$numSpecies, sbml$species, sbml$speciesInitial, 
                   sbml$numParams, sbml$params, sbml$paramsVals)
 
     })    
-
+    
     get_values = function(input, id, n, param_names) {
         vals = numeric(0)
         for (i in 1:n) {
@@ -119,43 +120,53 @@ shinyServer(function(input, output, session) {
         return(vals)
     }
     
-    generateData = reactive({
+    getData = reactive({
 
-        noise = input$snr  ## TODO: change from variance to SNR 
-        tinterv = c(input$timePointsMin, input$timePointsMax)
-        
-        model = getModel()
-        xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
-        params = get_values(input, 'param_val', model$numParams, model$params)
-        
-        if (is.null(input$sbml_file)) { # no SBML input, generate data using predefined models
-
-            selected_model = input$selected_model
-            res = generate_data_selected_model(selected_model, xinit, tinterv, 
-                                                  model$numSpecies, params, noise)
+        if (is.null(values$data_from)) {
             
-        } else { # extract from the SBML file
-         
-            samp = 2
-            f = input$sbml_file$datapath
-            res = generate_data_from_sbml(f, xinit, tinterv, params, samp, noise)
+            res = NULL
+            
+        } else if (values$data_from == 'uploaded') {
 
+            model = getModel()
+            csv_file = input$csv_file$datapath
+            sbml_file = input$sbml_file$datapath
+            res = get_data_from_csv(csv_file, sbml_file, model, values$model_from, input$selected_model)
+            
+        } else if (values$data_from == 'generated') {
+
+            noise = input$snr  ## TODO: change from variance to SNR 
+            tinterv = c(input$timePointsMin, input$timePointsMax)
+            
+            model = getModel()
+            xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
+            params = get_values(input, 'param_val', model$numParams, model$params)
+            
+            if (values$model_from == 'uploaded') { # extract from the SBML file
+                
+                pick = 1
+                f = input$sbml_file$datapath
+                res = generate_data_from_sbml(f, xinit, tinterv, params, pick, noise)
+                
+            } else if (values$model_from == 'selected') { # generate data using predefined models
+
+                selected_model = input$selected_model
+                res = generate_data_selected_model(selected_model, xinit, tinterv, 
+                                                   model$numSpecies, params, noise)
+                                
+            }
+            
         }
         
-        res
+        return(res)
         
     })
     
-    observeEvent(input$generateBtn, {
-
+    showData = function(input, output, session, t, y_no) {
+        
         model = getModel()
         
-        res = generateData()
-        t = res$time
-        y_no = res$y_no
-        
         updateTabsetPanel(session, "inTabset", selected="results")
-        output$resultsType = renderText({ "Generated data:" })
         output$resultsPlot = renderPlot({
             
             plot_df = data.frame(y_no)
@@ -172,32 +183,54 @@ shinyServer(function(input, output, session) {
                     ggtitle(title) + 
                     theme_bw() + theme(text = element_text(size=20)) + 
                     expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
-
+                
             }
             do.call(grid.arrange, pp)
             
         })    
         
-        
         shinyjs::enable("inferBtn")
+        if (values$data_from == 'generated') {
+            output$resultsType = renderText({ "Generated data:" })
+            updateActionButton(session, "inferBtn", label = "Infer on generated data")    
+            shinyjs::show("downloadDataBtn")
+        } else if (values$data_from == 'uploaded') {
+            output$resultsType = renderText({ "Loaded data:" })
+            updateActionButton(session, "inferBtn", label = "Infer on loaded data")    
+        }
         
-        shinyjs::show("downloadDataBtn")
-        updateActionButton(session, "inferBtn", label = "Infer on generated data")    
         output$downloadDataBtn <- downloadHandler(
             filename = function() { 'data.csv' },
             content = function(file) {
-                write.csv(df, file)
+                df1 = as.data.frame(res$time)
+                df2 = as.data.frame(res$y_no)
+                names(df1) = 'time'
+                names(df2) = model$species
+                df = cbind(df1, df2)
+                write.csv(df, file, row.names=FALSE)
             }
         )    
         
+    }
+    
+    observeEvent(input$generateBtn, {
+        values$data_from <- 'generated'
+        res = getData()
+        showData(input, output, session, res$time, res$y_no)
     })    
+    
+    observeEvent(input$csv_file, {
+        values$data_from <- 'uploaded'
+        res = getData()
+        showData(input, output, session, res$time, res$y_no)
+    })
     
     observeEvent(input$inferBtn, {
         
         shinyjs::disable("inferBtn")
         updateTabsetPanel(session, "inTabset", selected="results")        
 
-        res = generateData()
+        res = getData()
         kkk = res$kkk
         y_no = res$y_no
         tinterv = res$tinterv
@@ -285,7 +318,7 @@ shinyServer(function(input, output, session) {
         })
         
         output$console = renderPrint({
-            return(print(values$infer_res$output))
+            return(values$infer_res$output)
         })
                 
         output$resultsPlot = renderPlot({
