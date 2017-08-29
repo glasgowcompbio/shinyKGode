@@ -28,7 +28,8 @@ shinyServer(function(input, output, session) {
         model_from = NULL,
         data_from = NULL,
         infer_res = NULL,
-        df = NULL
+        df = NULL,
+        kkk0 = NULL
     )    
         
     getModel = reactive({
@@ -145,6 +146,7 @@ shinyServer(function(input, output, session) {
 
         }
         
+        values$kkk0 = res$kkk0
         return(res)
         
     })
@@ -246,6 +248,14 @@ shinyServer(function(input, output, session) {
             infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
         }
         
+        # for plotting: solve the ode using the inferred parameters
+        # params = get_values(input, 'param_val', model$numParams, model$params)
+        params = infer_res$ode_par
+        xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
+        solved = values$kkk0$solve_ode(par_ode=params, xinit, tinterv)
+        solved_yode = values$kkk0$y_ode
+        solved_t = values$kkk0$t
+        
         df = data.frame(parameters=infer_res$ode_par)
         rownames(df) = model$params
 
@@ -318,6 +328,8 @@ shinyServer(function(input, output, session) {
                 intp_y = res$intp_y[[i]]
                 data_x = res$data_x[[i]]
                 data_y = res$data_y[[i]]
+                solved_y = solved_yode[i, ]
+                solved_x = solved_t
 
                 time = intp_x
                 plot_df1 = data.frame(time)
@@ -329,17 +341,25 @@ shinyServer(function(input, output, session) {
                 plot_df2$observed = data_y
                 plot_df2 = melt(plot_df2, id.vars='time', variable.name='type')
                 
-                plot_df = rbind(plot_df1, plot_df2)
-                temp1 = subset(plot_df, type=='observed')
-                temp2 = subset(plot_df, type=='interpolated')
+                time = solved_x
+                plot_df3 = data.frame(time)
+                plot_df3$solved = solved_y
+                plot_df3 = melt(plot_df3, id.vars='time', variable.name='type')
+                
+                plot_df = rbind(plot_df1, plot_df2, plot_df3)
+                temp2 = subset(plot_df, type=='observed')
+                temp1 = subset(plot_df, type=='interpolated')
+                temp3 = subset(plot_df, type=='solved')
                 
                 title = paste('State', model$species[i], sep=' ')
                 g = ggplot() + 
-                    geom_point(data=temp1, aes(x=time, y=value, colour='red')) +
-                    geom_line(data=temp2, aes(x=time, y=value, colour='blue'), size=1) +
+                    geom_point(data=temp2, aes(x=time, y=value, colour='c1')) +
+                    geom_line(data=temp1, aes(x=time, y=value, colour='c2'), size=1) +
+                    geom_line(data=temp3, aes(x=time, y=value, colour='c3'), size=1, linetype="dashed") + 
                     ggtitle(title) +
                     theme_bw() + theme(text = element_text(size=20)) +
-                    scale_colour_manual(name="Legend", values=c("red", "blue"), labels=c('Interpolated', 'Observed')) +
+                    scale_colour_manual(name="Legend", values=c(c1="red", c2="blue", c3="grey"), 
+                                        labels=c(c1="Observed", c2="Interpolated", c3="Solved")) +
                     expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
                 
                 pp[[i]] = g

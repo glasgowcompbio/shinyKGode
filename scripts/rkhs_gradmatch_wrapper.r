@@ -211,7 +211,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
     
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, numSpecies), noise*diag(numSpecies)) 
-    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk0)
     return(res)
 
 }
@@ -237,7 +237,7 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, pick=1) {
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates), noise*diag(mi$nStates))
     
     sbml_data = list(model=model, mi=mi, initial_names=initial_names)
-    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv, kkk0=kkk0)
     return(res)
     
 }
@@ -317,7 +317,7 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
     print(ode_fun)
     print(tinterv)
     kkk = ode$new(1, fun=ode_fun, t=init_time, ode_par=init_par, y_ode=t(y_no))
-    res = list(time=init_time, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv)
+    res = list(time=init_time, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk)
     return(res)
     
 }
@@ -416,7 +416,7 @@ gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
     data_x = list()
     data_y = list()
     for (i in 1:length(bbb)) { 
-        print(bbb[[i]])
+        # print(bbb[[i]])
         intp_x[[i]] = grids
         intp_y[[i]] = bbb[[i]]$predictT(grids)$pred
         data_x[[i]] = bbb[[i]]$t 
