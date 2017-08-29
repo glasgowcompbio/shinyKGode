@@ -135,7 +135,7 @@ get_initial_values_selected = function(selected_model) {
     } else {
         res = NULL
     }
-    res
+    return(res)
     
 }
 
@@ -212,8 +212,47 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
     n_o = max( dim( kkk$y_ode) )
     y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, numSpecies), noise*diag(numSpecies)) 
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv)
-    res
+    return(res)
 
+}
+
+generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, pick=1) {
+    
+    res = get_ode_fun(f, params)
+    model = res$model
+    mi = res$mi
+    ode_fun = res$ode_fun
+    initial_names = names(params)
+    
+    kkk0 = ode$new(pick, fun=ode_fun)
+    xinit = as.matrix(mi$S0)
+    kkk0$solve_ode(par_ode=params, xinit, tinterv)
+    
+    init_par = params
+    init_yode = kkk0$y_ode
+    init_t = kkk0$t
+    kkk = ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
+    
+    n_o = max( dim( kkk$y_ode) )
+    y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates), noise*diag(mi$nStates))
+    
+    sbml_data = list(model=model, mi=mi, initial_names=initial_names)
+    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv)
+    return(res)
+    
+}
+
+generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv, noiseVar, numSpecies, params) {
+    
+    noise = noiseVar  ## TODO: change from variance to SNR 
+    
+    if (model_from == 'uploaded') { # generate data using the model from an SBML file
+        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, noise)
+    } else if (model_from == 'selected') { # generate data using predefined models
+        res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params, noise)
+    }
+    return(res)
+    
 }
 
 add_no_duplicate <- function(v1, v2) {
@@ -223,7 +262,7 @@ add_no_duplicate <- function(v1, v2) {
             v1[name] = v2[name]
         }
     }
-    v1
+    return(v1)
 }
 
 # TODO: Fix parsing problem:
@@ -246,7 +285,7 @@ load_sbml <- function(f) {
 
     initial_names = names(params)
     res = list(model=model, mi=mi, params=params, initial_names=initial_names)
-    res
+    return(res)
     
 }
 
@@ -279,7 +318,7 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
     print(tinterv)
     kkk = ode$new(1, fun=ode_fun, t=init_time, ode_par=init_par, y_ode=t(y_no))
     res = list(time=init_time, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv)
-    res
+    return(res)
     
 }
 
@@ -319,32 +358,6 @@ get_ode_fun <- function(f, params) {
 
     return(list(model=model, mi=mi, ode_fun=ode_fun))    
     
-}
-
-generate_data_from_sbml <- function(f, xinit, tinterv, params, pick, noise) {
-
-    res = get_ode_fun(f, params)
-    model = res$model
-    mi = res$mi
-    ode_fun = res$ode_fun
-    initial_names = names(params)
-    
-    kkk0 = ode$new(pick, fun=ode_fun)
-    xinit = as.matrix(mi$S0)
-    kkk0$solve_ode(par_ode=params, xinit, tinterv)
-    
-    init_par = params
-    init_yode = kkk0$y_ode
-    init_t = kkk0$t
-    kkk = ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
-
-    n_o = max( dim( kkk$y_ode) )
-    y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates), noise*diag(mi$nStates))
-    
-    sbml_data = list(model=model, mi=mi, initial_names=initial_names)
-    res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv)
-    res
-
 }
 
 get_grid <- function(tinterv, n) {
