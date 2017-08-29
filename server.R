@@ -234,15 +234,28 @@ shinyServer(function(input, output, session) {
             attach(res$sbml_data)
         }
         
-        if (input$method == "gm") {
+        if (input$ode_reg == 'on' && input$warping == 'on') {
+            method = '3rd+warping'
+        } else {
+            if (input$ode_reg == 'on') {
+                method = 'gm+3rd'
+            } else if (input$warping == 'on') {
+                method = 'warping'
+            } else {
+                method = 'gm'
+            }
+        }
+        print(paste('method =', method))
+
+        if (method == "gm") {
             infer_res = gradient_match(kkk, tinterv, y_no, input$ktype, progress)
-        } else if (input$method == "gm+3rd") {
+        } else if (method == "gm+3rd") {
             infer_res = gradient_match_third_step(kkk, tinterv, y_no, input$ktype, progress)
-        } else if (input$method == "warping") {
+        } else if (method == "warping") {
             peod = get_values(input, 'p0_', nst, model$species)
             eps = input$eps
             infer_res = warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
-        } else if (input$method == "3rd+warping") {
+        } else if (method == "3rd+warping") {
             peod = get_values(input, 'p0_', nst, model$species)
             eps = input$eps
             infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                

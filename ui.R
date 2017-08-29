@@ -69,11 +69,13 @@ shinyUI(fluidPage(
                         ),
                         column(3, offset = 1,
                            h5("Run Inference"),
-                           radioButtons("method", "Method", c(
-                               "Gradient Matching"="gm", 
-                               "Gradient Matching + 3rd Step"="gm+3rd",
-                               "Warping"="warping",
-                               "Warping + 3rd Step"="3rd+warping"
+                           radioButtons("ode_reg", "ODE Regularisation", c(
+                               "Off"="off",
+                               "On"="on"
+                           ), inline=F),
+                           radioButtons("warping", "Warping", c(
+                               "Off"="off",
+                               "On"="on"
                            ), inline=F),
                            shinyjs::disabled(
                                actionButton("inferBtn", "Infer")
