@@ -19,14 +19,15 @@ shinyUI(fluidPage(
 
         column(2,
                h4("Define Model"),
-               selectInput("selected_model", "Select predefined models", modelChoices),               
-               fileInput("sbml_file", "Or you can upload your own model in SBML format",
+               selectInput("selected_model", "Select a predefined model", modelChoices),               
+               fileInput("sbml_file", "Or upload an SBML model",
                          accept = c(
                              "application/octet-stream",
                              "binary/hdf5",
                              ".hdf5")
                ),        
-               helpText("Choosing SBML instead of a predefined model will use numerical gradients."),
+               helpText("Uploading SBML instead of selecting a predefined model will use numerical gradients."),
+               helpText(a("Download SBML Editor", href="http://www.ebi.ac.uk/compneur-srv/SBMLeditor.html", target="_blank")),
                tags$hr(),
                h4("Load Data"),
                fileInput("csv_file", "Choose a CSV File",
