@@ -26,6 +26,7 @@ shinyUI(fluidPage(
                              "binary/hdf5",
                              ".hdf5")
                ),        
+               helpText("Choosing SBML instead of a predefined model will use numerical gradients."),
                tags$hr(),
                h4("Load Data"),
                fileInput("csv_file", "Choose a CSV File",
