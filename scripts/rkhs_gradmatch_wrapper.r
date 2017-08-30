@@ -172,8 +172,14 @@ get_initial_values_sbml = function(inFile) {
     
 }
 
+add_noise <- function(x, snr_db) { 
+    denom = 10^(snr_db/10)
+    noise = x/denom
+    return(x + rnorm(1, 0, noise))
+}
+
 generate_data_selected_model = function(selected_model, xinit, tinterv, numSpecies, 
-                                           paramsVals, noise) {
+                                           paramsVals, snr_db) {
 
     npar = length(paramsVals)
     if (selected_model == "lv") {
@@ -209,14 +215,13 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
 
     }
     
-    n_o = max( dim( kkk$y_ode) )
-    y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, numSpecies), noise*diag(numSpecies)) 
+    y_no =  add_noise(t(kkk$y_ode), snr_db)
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk0)
     return(res)
 
 }
 
-generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, pick=1) {
+generate_data_from_sbml <- function(f, xinit, tinterv, params, snr_db, pick=1) {
     
     res = get_ode_fun(f, params)
     model = res$model
@@ -233,8 +238,7 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, pick=1) {
     init_t = kkk0$t
     kkk = ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
     
-    n_o = max( dim( kkk$y_ode) )
-    y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates), noise*diag(mi$nStates))
+    y_no =  add_noise(t(kkk$y_ode), snr_db)
     
     sbml_data = list(model=model, mi=mi, initial_names=initial_names)
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv, kkk0=kkk0)
@@ -242,14 +246,12 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, pick=1) {
     
 }
 
-generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv, noiseVar, numSpecies, params) {
-    
-    noise = noiseVar  ## TODO: change from variance to SNR 
+generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv, snr_db, numSpecies, params) {
     
     if (model_from == 'uploaded') { # generate data using the model from an SBML file
-        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, noise)
+        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, snr_db)
     } else if (model_from == 'selected') { # generate data using predefined models
-        res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params, noise)
+        res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params, snr_db)
     }
     return(res)
     

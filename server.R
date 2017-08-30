@@ -10,7 +10,7 @@ SEED = 19537
 set.seed(SEED)
 modelChoices = c("---" = "",
                  "Lotka-Volterra" = "lv",
-                 "Fiz hugh nagumo" = "fhg",
+                 "Fiz hugh Nagumo" = "fhg",
                  "Biopathway" = "bp")
 
 shinyServer(function(input, output, session) {
@@ -139,9 +139,9 @@ shinyServer(function(input, output, session) {
 
             xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
             tinterv = c(input$timePointsMin, input$timePointsMax)
-            noise = input$snr 
+            snr_db = input$snr_db
             res = generate_data(values$model_from, input$sbml_file$datapath, input$selected_model, 
-                                xinit, tinterv, noise, 
+                                xinit, tinterv, snr_db, 
                                 model$numSpecies, params)
 
         }

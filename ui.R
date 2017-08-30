@@ -4,7 +4,7 @@ library(shinyjs)
 kernelChoices = c("rbf"="rbf", "mlp"="mlp")
 modelChoices = c("---" = "",
                  "Lotka-Volterra" = "lv",
-                 "Fiz hugh nagumo" = "fhg",
+                 "Fiz hugh Nagumo" = "fhg",
                  "Biopathway" = "bp")
 
 shinyUI(fluidPage(
@@ -36,13 +36,12 @@ shinyUI(fluidPage(
                              "binary/hdf5",
                              ".hdf5")
                ),
-               tags$hr(),
                h4("Generate Data"),
                helpText(("Time Points.")),
                fluidRow(
                    column(6, numericInput("timePointsMin", "Min", value=0, min=0, max=NA, step=1)),
                    column(6, numericInput("timePointsMax", "Max", value=6, min=0, max=NA, step=1)),
-                   column(6, numericInput("snr", "SNR", value=0.1, min=0, max=NA, step=0.1))
+                   column(6, numericInput("snr_db", "SNR (dB)", value=1, min=0, max=NA, step=1))
                ),
                # shinyjs::disabled(
                #    numericInput("timePointsStep", "Time Points (Step)", value=0, min=0, max=NA, step=1)
