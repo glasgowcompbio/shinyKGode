@@ -84,7 +84,7 @@ kkk = ode$new(1,fun=BP_fun,t= init_t,ode_par= init_par, y_ode=init_yode )
 
 n_o = max( dim( kkk$y_ode) )
 y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0,0,0,0),noise*diag(5)) ## for real data, we need to let y_no = data where  the row index is the index for states
-
+# View(y_no)
 
 ############################# parameter inference   ############################## 
 ##### standard gradient matching

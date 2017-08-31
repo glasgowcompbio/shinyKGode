@@ -195,8 +195,8 @@ shinyServer(function(input, output, session) {
         output$downloadDataBtn <- downloadHandler(
             filename = function() { 'data.csv' },
             content = function(file) {
-                df1 = as.data.frame(res$time)
-                df2 = as.data.frame(res$y_no)
+                df1 = as.data.frame(t)
+                df2 = as.data.frame(y_no)
                 names(df1) = 'time'
                 names(df2) = model$species
                 df = cbind(df1, df2)

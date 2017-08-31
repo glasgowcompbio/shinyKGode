@@ -249,6 +249,9 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
         y_no =  add_noise(kkk$y_ode, noise)
     } 
 
+    # print("Data is")
+    # print(y_no)
+    
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk0)
     return(res)
 
