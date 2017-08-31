@@ -49,42 +49,47 @@ shinyServer(function(input, output, session) {
         removeUI(selector = '#placeholderParams *', multiple=TRUE)
     }
     
-    showModel = function(input, output, 
-                         numSpecies, species, speciesInitial,
-                         numParams, params, paramsVals) {
+    showModel = function(input, output, res) {
 
         removeUI(selector = '#placeholderParams *', multiple=TRUE)
         removeUI(selector = '#placeholderStates *', multiple=TRUE)
         
-        output$odeParameters = renderText({ paste(params, collapse=", " ) })        
-        for (i in 1:numParams) {
+        output$odeParameters = renderText({ paste(res$params, collapse=", " ) })        
+        for (i in 1:res$numParams) {
             paramValId = paste0('param_val', i)
-            paramValLabel = params[i]
+            paramValLabel = res$params[i]
             insertUI(
                 selector = '#placeholderParams',
                 ui = fluidRow(
-                    column(12, numericInput(paramValId, paramValLabel, value=paramsVals[i], min=0, max=NA, step=1))
+                    column(12, numericInput(paramValId, paramValLabel, value=res$paramsVals[i], 
+                                            min=0, max=NA, step=1))
                 )                    
             )
         }
         
         labels = c()
-        for (i in 1:numSpecies) {
+        for (i in 1:res$numSpecies) {
             initCondId = paste0('initial_cond', i)
-            initCondLabel = paste0(species[i], " Initial Cond.")
+            initCondLabel = paste0(res$species[i], " Initial Cond.")
             guessId = paste0('p0_', i)
             guessLabel = 'Guess Period'
             insertUI(
                 selector = '#placeholderStates',
                 ui = fluidRow(
-                    column(6, numericInput(initCondId, initCondLabel, value=speciesInitial[i], min=0, max=NA, step=0.1)),
+                    column(6, numericInput(initCondId, initCondLabel, value=res$speciesInitial[i], 
+                                           min=0, max=NA, step=0.1)),
                     column(6, numericInput(guessId, guessLabel, value=6, min=0, max=NA, step=0.1))
                 )                    
             )
-            labels = c(labels, species[i])
+            labels = c(labels, res$species[i])
         }
         output$systemStates = renderText({ paste(labels, collapse=", " ) })
         
+        updateNumericInput(session, "timePointsMin", value = res$tinterv[1])
+        updateNumericInput(session, "timePointsMax", value = res$tinterv[2])
+        updateNumericInput(session, "noise", value = res$noise)
+        updateRadioButtons(session, "noise_unit", selected="var")
+
     }
     
     observeEvent(input$selected_model, {
@@ -93,9 +98,7 @@ shinyServer(function(input, output, session) {
         res = getModel()
         
         if (!is.null(res)) { # load one of the three pre-defined models, null otherwise
-            showModel(input, output, 
-                      res$numSpecies, res$species, res$speciesInitial, 
-                      res$numParams, res$params, res$paramsVals)
+            showModel(input, output, res)
         } else { # no predefined model is selected
             resetScreen(input, output)
         }
@@ -106,9 +109,7 @@ shinyServer(function(input, output, session) {
 
         values$model_from <- 'uploaded'
         sbml = getModel()
-        showModel(input, output, 
-                  sbml$numSpecies, sbml$species, sbml$speciesInitial, 
-                  sbml$numParams, sbml$params, sbml$paramsVals)
+        showModel(input, output, sbml)
 
     })    
     
@@ -269,13 +270,13 @@ shinyServer(function(input, output, session) {
         }
         
         # for plotting: solve the ode using the inferred parameters
-        # params = get_values(input, 'param_val', model$numParams, model$params)
-        params = infer_res$ode_par
+        # params = get_values(input, 'param_val', model$numParams, model$params) # initial params
+        params = infer_res$ode_par # inferred params
         xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
         solved = values$kkk0$solve_ode(par_ode=params, xinit, tinterv)
         solved_yode = values$kkk0$y_ode
         solved_t = values$kkk0$t
-        
+
         df = data.frame(parameters=infer_res$ode_par)
         rownames(df) = model$params
 

@@ -46,8 +46,12 @@ LV_initial_values = function() {
     params = c("alpha", "beta", "gamma", "delta")
     paramsVals = c(1, 1, 4, 1)
     
-    return(list("numSpecies"=numSpecies, "species"=species, "speciesInitial"=speciesInitial, 
-                "numParams"=numParams, "params"=params, "paramsVals"=paramsVals))
+    tinterv = c(0, 6)
+    noise_var = 0.1    
+    
+    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
+                numParams=numParams, params=params, paramsVals=paramsVals,
+                tinterv=tinterv, noise_var=noise_var))
     
 }
 
@@ -77,8 +81,12 @@ FN_initial_values = function() {
     params = c("a", "b", "c")
     paramsVals = c(0.2, 0.2, 3)
     
-    return(list("numSpecies"=numSpecies, "species"=species, "speciesInitial"=speciesInitial, 
-                "numParams"=numParams, "params"=params, "paramsVals"=paramsVals))
+    tinterv = c(0, 10)
+    noise_var = 0.01    
+    
+    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
+                numParams=numParams, params=params, paramsVals=paramsVals,
+                tinterv=tinterv, noise_var=noise_var))
     
 }
 
@@ -119,8 +127,12 @@ BP_initial_values = function() {
     params = c("k1", "k2", "k3", "k4", "k5", "k6")
     paramsVals = c(0.07, 0.6, 0.05, 0.3, 0.017, 0.3)
     
-    return(list("numSpecies"=numSpecies, "species"=species, "speciesInitial"=speciesInitial, 
-                "numParams"=numParams, "params"=params, "paramsVals"=paramsVals))
+    tinterv = c(0, 100)
+    noise_var = 0.017^2  
+    
+    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
+                numParams=numParams, params=params, paramsVals=paramsVals,
+                tinterv=tinterv, noise_var=noise_var))
     
 }
 
@@ -167,8 +179,13 @@ get_initial_values_sbml = function(inFile) {
     numSpecies = Model_getNumSpecies(m)
     numParams = Model_getNumParameters(m)
     
-    return(list("numSpecies"=numSpecies, "species"=species, "speciesInitial"=speciesInitial, 
-                "numParams"=numParams, "params"=params, "paramsVals"=paramsVals))
+    # just some randomly selected default values
+    tinterv = c(0, 10)
+    noise_var = 0.1  
+    
+    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
+                numParams=numParams, params=params, paramsVals=paramsVals,
+                tinterv=tinterv, noise_var=noise_var))
     
 }
 
@@ -231,7 +248,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
     } else if (noise_unit == 'db') {
         y_no =  add_noise(kkk$y_ode, noise)
     } 
-    
+
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk0)
     return(res)
 
@@ -339,8 +356,6 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
     }
     
     tinterv = c(min(init_time), max(init_time))
-    print(ode_fun)
-    print(tinterv)
     kkk = ode$new(1, fun=ode_fun, t=init_time, ode_par=init_par, y_ode=t(y_no))
     res = list(time=init_time, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk)
     return(res)
