@@ -123,6 +123,10 @@ shinyServer(function(input, output, session) {
     
     getData = reactive({
 
+        SEED = input$seed
+        # print(paste('Get data seed is', SEED))
+        set.seed(SEED)
+        
         model = getModel()
         params = get_values(input, 'param_val', model$numParams, model$params)
         
@@ -139,9 +143,8 @@ shinyServer(function(input, output, session) {
 
             xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
             tinterv = c(input$timePointsMin, input$timePointsMax)
-            snr_db = input$snr_db
             res = generate_data(values$model_from, input$sbml_file$datapath, input$selected_model, 
-                                xinit, tinterv, snr_db, 
+                                xinit, tinterv, input$noise, input$noise_unit, 
                                 model$numSpecies, params)
 
         }
@@ -216,6 +219,10 @@ shinyServer(function(input, output, session) {
     
     observeEvent(input$inferBtn, {
         
+        SEED = input$seed
+        # print(paste('Infer seed is', SEED))
+        set.seed(SEED)
+        
         shinyjs::disable("inferBtn")
         updateTabsetPanel(session, "inTabset", selected="results")        
 
@@ -245,7 +252,7 @@ shinyServer(function(input, output, session) {
                 method = 'gm'
             }
         }
-        print(paste('method =', method))
+        # print(paste('method =', method))
 
         if (method == "gm") {
             infer_res = gradient_match(kkk, tinterv, y_no, input$ktype, progress)

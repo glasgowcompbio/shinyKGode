@@ -172,14 +172,24 @@ get_initial_values_sbml = function(inFile) {
     
 }
 
-add_noise <- function(x, snr_db) { 
+test = function(std) {
+    rnorm(length(std), mean=0, sd=std)
+}
+
+add_noise <- function(x, snr_db) {
     denom = 10^(snr_db/10)
-    noise = x/denom
-    return(x + rnorm(1, 0, noise))
+    std = t(x)/denom
+    noise = numeric()
+    for (i in 1:ncol(std)) {
+        temp = sapply(std[, i], test)
+        noise = cbind(noise, temp)
+    }
+    res = t(x) + noise
+    return(res)
 }
 
 generate_data_selected_model = function(selected_model, xinit, tinterv, numSpecies, 
-                                           paramsVals, snr_db) {
+                                           paramsVals, noise, noise_unit) {
 
     npar = length(paramsVals)
     if (selected_model == "lv") {
@@ -214,14 +224,20 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
         kkk = ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     }
+
+    if (noise_unit == 'var') {
+        n_o = max( dim( kkk$y_ode) )
+        y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, numSpecies), noise*diag(numSpecies)) 
+    } else if (noise_unit == 'db') {
+        y_no =  add_noise(kkk$y_ode, noise)
+    } 
     
-    y_no =  add_noise(t(kkk$y_ode), snr_db)
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk0)
     return(res)
 
 }
 
-generate_data_from_sbml <- function(f, xinit, tinterv, params, snr_db, pick=1) {
+generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit, pick=1) {
     
     res = get_ode_fun(f, params)
     model = res$model
@@ -238,7 +254,12 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, snr_db, pick=1) {
     init_t = kkk0$t
     kkk = ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
     
-    y_no =  add_noise(t(kkk$y_ode), snr_db)
+    if (noise_unit == 'var') {
+        n_o = max( dim( kkk$y_ode) )
+        y_no =  t(kkk$y_ode) + rmvnorm(n_o, rep(0, mi$nStates), noise*diag(mi$nStates))
+    } else if (noise_unit == 'db') {
+        y_no =  add_noise(kkk$y_ode, noise)
+    } 
     
     sbml_data = list(model=model, mi=mi, initial_names=initial_names)
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv, kkk0=kkk0)
@@ -246,12 +267,14 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, snr_db, pick=1) {
     
 }
 
-generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv, snr_db, numSpecies, params) {
+generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv, 
+                          noise, noise_unit, numSpecies, params) {
     
     if (model_from == 'uploaded') { # generate data using the model from an SBML file
-        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, snr_db)
+        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, noise, noise_unit)
     } else if (model_from == 'selected') { # generate data using predefined models
-        res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params, snr_db)
+        res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params, 
+                                           noise, noise_unit)
     }
     return(res)
     

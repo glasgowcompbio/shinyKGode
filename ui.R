@@ -40,8 +40,14 @@ shinyUI(fluidPage(
                helpText(("Time Points.")),
                fluidRow(
                    column(6, numericInput("timePointsMin", "Min", value=0, min=0, max=NA, step=1)),
-                   column(6, numericInput("timePointsMax", "Max", value=6, min=0, max=NA, step=1)),
-                   column(6, numericInput("snr_db", "SNR (dB)", value=1, min=0, max=NA, step=1))
+                   column(6, numericInput("timePointsMax", "Max", value=6, min=0, max=NA, step=1))
+               ),
+               fluidRow(
+                   column(6, numericInput("noise", "Noise", value=0.1, min=0, max=NA, step=0.1)),
+                   column(6, radioButtons("noise_unit", '', c(
+                       "Variance"="var",
+                       "dB"="db"
+                   ), inline=F))
                ),
                # shinyjs::disabled(
                #    numericInput("timePointsStep", "Time Points (Step)", value=0, min=0, max=NA, step=1)
@@ -100,6 +106,10 @@ shinyUI(fluidPage(
                         plotOutput('diagnosticPlot'),
                         h5("Console log"),
                         verbatimTextOutput("console")
+               ),
+               tabPanel(title="Advanced Parameters",
+                        value="advanced",
+                        numericInput("seed", "Seed", value=19537, min=-1, max=NA, step=1)
                )
            )               
         )

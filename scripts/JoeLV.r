@@ -54,16 +54,26 @@ init_yode = kkk0$y_ode
 init_t = kkk0$t
 
 kkk = ode$new(1,fun=LV_fun,grfun=LV_grlNODE,t= init_t,ode_par= init_par, y_ode=init_yode )
-n_o = max( dim( kkk$y_ode) )
 
-noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
-y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0),noise*diag(2))
+# n_o = max( dim( kkk$y_ode) )
+# noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
+# y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0),noise*diag(2))
+
+test = function(std) {
+    rnorm(length(std), mean=0, sd=std)
+}
 
 snr_db = 20
-add_noise <- function(x, snr_db) { 
+add_noise <- function(x, snr_db) {
     denom = 10^(snr_db/10)
-    noise = x/denom
-    return(x + rnorm(1, mean=0, sd=noise))
+    std = t(x)/denom
+    noise = numeric()
+    for (i in 1:ncol(std)) {
+        temp = sapply(std[, i], test)
+        noise = cbind(noise, temp)
+    }
+    res = t(x) + noise
+    return(res)
 }
 
 y_no = add_noise(t(kkk$y_ode), snr_db)
