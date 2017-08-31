@@ -57,8 +57,8 @@ kkk = ode$new(1,fun=LV_fun,grfun=LV_grlNODE,t= init_t,ode_par= init_par, y_ode=i
 
 n_o = max( dim( kkk$y_ode) )
 noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
-noise = 0
 y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0),noise*diag(2))
+View(y_no)
 
 # test = function(std) {
 #     rnorm(length(std), mean=0, sd=std)

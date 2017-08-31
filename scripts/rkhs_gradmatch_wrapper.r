@@ -220,12 +220,12 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
         
     } else if (selected_model == "fhg") {
         
-        kkk0 = ode$new(numSpecies,fun=FN_fun,grfun=FN_grlNODE)
+        kkk0 = ode$new(2,fun=FN_fun,grfun=FN_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
-        kkk = ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
+        kkk = ode$new(1, fun=FN_fun, grfun=FN_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
         
     } else if (selected_model == 'bp') {
         

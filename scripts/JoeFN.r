@@ -1,6 +1,5 @@
-
-noise = 0.01  ##   10db0.1    20db 0.01   30db0.001    40db 0.0001
 SEED = 19537
+set.seed(SEED)
 
 ### define ode 
     FN_fun = function(t,x,par_ode){
@@ -28,17 +27,17 @@ SEED = 19537
    }
 
 ##############################################################
-source('kernel1.r')
-source('rkhs1.r')
-source('rk3g1.r')
-source('ode.r')
-source('WarpSin.r')
+source('/Users/joewandy/git/rkhs_gradmatch/kernel.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkhs.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rk3g.r')
+source('/Users/joewandy/git/rkhs_gradmatch/ode.r')
+source('/Users/joewandy/git/rkhs_gradmatch/WarpSin.r')
 
-source('warpfun.r')
-source('crossvr')
-source('warpInitLen.r')
-source('third.r')
-source('rkg.r')
+source('/Users/joewandy/git/rkhs_gradmatch/warpfun.r')
+source('/Users/joewandy/git/rkhs_gradmatch/crossv.r')
+source('/Users/joewandy/git/rkhs_gradmatch/warpInitLen.r')
+source('/Users/joewandy/git/rkhs_gradmatch/third.r')
+source('/Users/joewandy/git/rkhs_gradmatch/rkg.r')
 
 ##################  generate data  #################################### 
 kkk0 = ode$new(2,fun=FN_fun,grfun=FN_grlNODE)
@@ -51,10 +50,11 @@ init_par = rep(c(0.1),3)
 init_yode = kkk0$y_ode
 init_t = kkk0$t
 
+noise = 0.01  ##   10db0.1    20db 0.01   30db0.001    40db 0.0001
 kkk = ode$new(1,fun=FN_fun,grfun=FN_grlNODE,t= init_t,ode_par= init_par, y_ode=init_yode )
-
 n_o = max( dim( kkk$y_ode) )
 y_no =  t(kkk$y_ode) + rmvnorm(n_o,c(0,0),noise*diag(2))
+# View(y_no)
 
 
 ############################# parameter inference   ############################## 

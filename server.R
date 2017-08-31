@@ -269,7 +269,7 @@ shinyServer(function(input, output, session) {
             infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
         }
         
-        # for plotting: solve the ode using the inferred parameters
+        # for plotting: solve the ode using the new parameters
         # params = get_values(input, 'param_val', model$numParams, model$params) # initial params
         params = infer_res$ode_par # inferred params
         xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
@@ -392,7 +392,7 @@ shinyServer(function(input, output, session) {
         
         output$resultsTable = renderTable({
             values$df
-        }, rownames=T)
+        }, rownames=T, digits=4)
     
         shinyjs::show("downloadParamsBtn")
         shinyjs::enable("inferBtn")
