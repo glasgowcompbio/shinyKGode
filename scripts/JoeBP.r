@@ -121,7 +121,7 @@ eps= 20          ## the standard deviation of period  user defined
 #lens=c(3,4,5) ## user can define the init value of lens for sigmoid function. the default is c(3,4,5)
 fixlens=warpInitLen(peod,eps,rkgres) ## find the start value for the warping basis function.
 
-www = warpfun(kkk,p0,bbb,peod,eps,fixlens,kkk$t,y_no)
+www = warpfun(kkk,bbb,peod,eps,fixlens,kkk$t,y_no)
 
 dtilda= www$dtilda
 bbbw = www$bbbw
@@ -132,8 +132,10 @@ wkkk = www$wkkk
 wkkk$ode_par
 
 plot(kkk$t,resmtest[1,],type='l')   ## plotting function
-plot(resmtest[1,],bbbw[[1]]$predict()$pred,type='l')  ## plot interpolation in warped time domain
-plot(kkk$t,bbbw[[1]]$predict()$pred,type='l')  ## plot interpolation in warped time domain
+
+plot(resmtest[1,], bbbw[[1]]$predict()$pred, type='l')  ## plot interpolation in warped time domain
+plot(kkk$t, bbbw[[1]]$predict()$pred, type='l')  ## plot interpolation in original time domain
+
 wgrid = wfun[[1]]$predictT(kkk0$t)$pred ## denser grid in warped domain
 plot( kkk0$t, bbbw[[1]]$predictT(wgrid)$pred,type='l') ## plot interpolatin with denser grid in original domain
 

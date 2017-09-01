@@ -103,7 +103,13 @@ shinyUI(fluidPage(
                ),
                tabPanel(title="Diagnostics",
                         value="diagnostics",
+                        h5("Objectives"),
                         plotOutput('diagnosticPlot'),
+                        conditionalPanel(
+                            condition = "input.warping == 'on'",  
+                            h5("Warping"),
+                            plotOutput('warpingPlot')
+                        ),
                         h5("Console log"),
                         verbatimTextOutput("console")
                ),

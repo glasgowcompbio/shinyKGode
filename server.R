@@ -2,7 +2,6 @@ library(shiny)
 library(gridExtra)
 library(ggplot2)
 library(reshape2)
-library(libSBML)
 
 source('scripts/rkhs_gradmatch_wrapper.r')
 
@@ -174,6 +173,8 @@ shinyServer(function(input, output, session) {
                 pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
                     geom_point(data=subset(plot_df, state==species), color="red") + 
                     ggtitle(title) + 
+                    xlab("Time") +
+                    ylab("Value") +
                     theme_bw() + theme(text = element_text(size=20)) + 
                     expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
                 
@@ -301,42 +302,74 @@ shinyServer(function(input, output, session) {
                 ggtitle('Optimisation Results') +
                 xlab("Iteration") +
                 ylab("Objective (f)") +
-                theme_bw() + theme(text = element_text(size=20)) +
+                theme_bw() + theme(text = element_text(size=20)) + 
                 expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+            return(g)
 
-            pp = list()
-            pp[[1]] = g
+        })
 
-            # plot the warping functions for each state, if we have them
-            if (!is.null(res$warpfun_x[[1]])) {
+        
+        # plot the warping functions for each state, if we have them
+        # if (!is.null(res$warpfun_x[[1]])) {
+        
+            output$warpingPlot = renderPlot({
                 
+                res = values$infer_res
+                pp = list()
                 for (i in 1:res$nst) {
                     
                     warpfun_x = res$warpfun_x[[i]]
                     warpfun_y = res$warpfun_y[[i]]
+                    warpfun_pred = res$warpfun_pred[[i]]
                     
-                    title = paste('State', model$species[i], ' - Warping', sep=' ')
+                    title = 'Original'
+                    warp_df = as.data.frame(warpfun_x)
+                    warp_df$intp = warpfun_pred
+                    g1 = ggplot() +
+                        geom_line(data=warp_df, aes(x=warpfun_x, y=intp), size=1) +
+                        ggtitle(title) + 
+                        xlab("Original time") +
+                        ylab("Value") +
+                        theme_bw() + theme(text = element_text(size=20)) + 
+                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
+                        theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                    
+                    title = paste('State', model$species[i], ' - Warp func.', sep=' ')
                     warp_df = as.data.frame(warpfun_x)
                     warp_df$warpfun_y = warpfun_y
-                    g = ggplot() +
+                    g2 = ggplot() +
                         geom_line(data=warp_df, aes(x=warpfun_x, y=warpfun_y), size=1) +
                         ggtitle(title) + 
-                        theme_bw() + theme(text = element_text(size=20)) +
-                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
-                    
-                    pp[[i+1]] = g
+                        xlab("Original time") +
+                        ylab("Warped time") +
+                        theme_bw() + theme(text = element_text(size=20)) + 
+                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
+                        theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
 
+                    title = 'Warped'
+                    warp_df = as.data.frame(warpfun_y)
+                    warp_df$intp = warpfun_pred
+                    g3 = ggplot() +
+                        geom_line(data=warp_df, aes(x=warpfun_y, y=intp), size=1) +
+                        ggtitle(title) + 
+                        xlab("Warped time") +
+                        ylab("Value") +
+                        theme_bw() + theme(text = element_text(size=20)) + 
+                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
+                        theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                                        
+                    pp[[i]] = grid.arrange(g1, g2, g3, ncol=3)
+                    
                 }
                 
-            }
+                do.call(grid.arrange, pp)
                 
-            # show all the plots
-            do.call(grid.arrange, pp)
-            
-        })
+            })
+                
+        # }
         
         output$console = renderPrint({
-            return(values$infer_res$output)
+            values$infer_res$output
         })
                 
         output$resultsPlot = renderPlot({
@@ -378,7 +411,7 @@ shinyServer(function(input, output, session) {
                     geom_line(data=temp1, aes(x=time, y=value, colour='c2'), size=1) +
                     geom_line(data=temp3, aes(x=time, y=value, colour='c3'), size=1, linetype="dashed") + 
                     ggtitle(title) +
-                    theme_bw() + theme(text = element_text(size=20)) +
+                    theme_bw() + theme(text = element_text(size=20)) + 
                     scale_colour_manual(name="Legend", values=c(c1="red", c2="blue", c3="grey"), 
                                         labels=c(c1="Observed", c2="Interpolated", c3="Solved")) +
                     expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))

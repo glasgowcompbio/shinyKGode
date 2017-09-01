@@ -469,7 +469,7 @@ gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output1, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
-                warpfun_x=NULL, warpfun_y=NULL,
+                warpfun_x=NULL, warpfun_y=NULL, warpfun_pred=NULL,
                 nst=length(intp_x)))
     
 }
@@ -507,7 +507,7 @@ gradient_match_third_step <- function(kkk, tinterv, y_no, ktype, progress) {
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
-                warpfun_x=NULL, warpfun_y=NULL,
+                warpfun_x=NULL, warpfun_y=NULL, warpfun_pred=NULL,
                 nst=length(intp_x)))
     
 }
@@ -541,6 +541,7 @@ warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     data_y = list()
     warpfun_x = list()
     warpfun_y = list()
+    warpfun_pred = list()
     for (i in 1:length(bbbw)) { 
         wgrids = wfun[[i]]$predictT(grids)$pred ## denser grid in warped domain
         intp_x[[i]] = grids
@@ -549,13 +550,14 @@ warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
         data_y[[i]] = bbb[[i]]$y
         warpfun_x[[i]] = kkk$t
         warpfun_y[[i]] = resmtest[i, ]
+        warpfun_pred[[i]] = bbbw[[i]]$predict()$pred
     }
 
     output = c(output1, output2, output3)
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y, 
-                warpfun_x=warpfun_x, warpfun_y=warpfun_y,
+                warpfun_x=warpfun_x, warpfun_y=warpfun_y, warpfun_pred=warpfun_pred,
                 nst=length(intp_x)))
     
     
@@ -612,7 +614,7 @@ third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output, objectives=objectives,
                 intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
-                warpfun_x=NULL, warpfun_y=NULL,
+                warpfun_x=NULL, warpfun_y=NULL, warpfun_pred=NULL,
                 nst=length(intp_x)))
     
     
