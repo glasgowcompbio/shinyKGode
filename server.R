@@ -405,7 +405,7 @@ shinyServer(function(input, output, session) {
             df = as.data.frame(objectives)
             iterations = seq_along(objectives)-1
             g = ggplot(data=df, aes(y=objectives, x=iterations)) +
-                geom_line(size=1) +
+                geom_line(size=1, colour='blue') +
                 geom_point() +
                 ggtitle('Optimisation Results') +
                 xlab("Iteration") +
