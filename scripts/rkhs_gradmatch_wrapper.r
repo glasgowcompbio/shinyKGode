@@ -617,19 +617,25 @@ third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     intp_y = list()
     data_x = list()
     data_y = list()
+    warpfun_x = list()
+    warpfun_y = list()
+    warpfun_pred = list()
     for (i in 1:length(res$rk3$rk)) { 
         wgrid = wfun[[i]]$predictT(grids)$pred
         intp_x[[i]] = grids
         intp_y[[i]] = res$rk3$rk[[i]]$predictT(wgrid)$pred
         data_x[[i]] = bbb[[i]]$t
         data_y[[i]] = bbb[[i]]$y
+        warpfun_x[[i]] = kkk$t
+        warpfun_y[[i]] = resmtest[i, ]
+        warpfun_pred[[i]] = bbbw[[i]]$predict()$pred
     }
     
     output = c(output1, output2, output3, output4, output5)
     objectives = parse_objectives(output1)
     return(list(ode_par=ode_par, output=output, objectives=objectives,
-                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y,
-                warpfun_x=NULL, warpfun_y=NULL, warpfun_pred=NULL,
+                intp_x=intp_x, intp_y=intp_y, data_x=data_x, data_y=data_y, 
+                warpfun_x=warpfun_x, warpfun_y=warpfun_y, warpfun_pred=warpfun_pred,
                 nst=length(intp_x)))
     
     
