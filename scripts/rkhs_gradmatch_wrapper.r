@@ -49,9 +49,13 @@ LV_initial_values = function() {
     tinterv = c(0, 6)
     noise_var = 0.1    
     
+    peod = c(6, 5.3) #8#9.7     ## the guessing period
+    eps = 1          ## the standard deviation of period
+    
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var))
+                tinterv=tinterv, noise_var=noise_var,
+                peod=peod, eps=eps))
     
 }
 
@@ -84,9 +88,13 @@ FN_initial_values = function() {
     tinterv = c(0, 10)
     noise_var = 0.01    
     
+    peod = c(8, 8.5) #8#9.7     ## the guessing period
+    eps = 1          ## the standard deviation of period
+    
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var))
+                tinterv=tinterv, noise_var=noise_var,
+                peod=peod, eps=eps))
     
 }
 
@@ -130,9 +138,13 @@ BP_initial_values = function() {
     tinterv = c(0, 100)
     noise_var = 0.017^2  
     
+    peod = c(200, 200, 200, 200, 200)   ## the guessing period for each state  user defined
+    eps= 20          ## the standard deviation of period  user defined
+    
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var))
+                tinterv=tinterv, noise_var=noise_var,
+                peod=peod, eps=eps))
     
 }
 
@@ -182,10 +194,13 @@ get_initial_values_sbml = function(inFile) {
     # just some randomly selected default values
     tinterv = c(0, 10)
     noise_var = 0.1  
+    peod = rep(1, numParams)
+    eps = 1
     
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var))
+                tinterv=tinterv, noise_var=noise_var,
+                peod=peod, eps=eps))
     
 }
 

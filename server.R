@@ -78,7 +78,8 @@ shinyServer(function(input, output, session) {
                 ui = fluidRow(
                     column(6, numericInput(initCondId, initCondLabel, value=res$speciesInitial[i], 
                                            min=0, max=NA, step=0.1)),
-                    column(6, numericInput(guessId, guessLabel, value=6, min=0, max=NA, step=0.1))
+                    column(6, numericInput(guessId, guessLabel, value=res$peod[i], 
+                                           min=0, max=NA, step=0.1))
                 )                    
             )
             labels = c(labels, res$species[i])
@@ -89,6 +90,7 @@ shinyServer(function(input, output, session) {
         updateNumericInput(session, "timePointsMax", value = res$tinterv[2])
         updateNumericInput(session, "noise", value = res$noise)
         updateRadioButtons(session, "noise_unit", selected="var")
+        updateNumericInput(session, "eps", value = res$eps)
 
     }
     

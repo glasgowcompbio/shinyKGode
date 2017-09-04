@@ -12,8 +12,8 @@ shinyUI(fluidPage(
     useShinyjs(),
     
     # Application title
-    # titlePanel(title=div(img(src="logo.png"), "ODE Inference Tool")),
-    titlePanel("ODE Inference Tool"),
+    # titlePanel(title=div(img(src="logo.png"), "Gradient Matching for ODE Inference")),
+    titlePanel("Gradient Matching for ODE Inference"),
     
     fluidRow(
 
