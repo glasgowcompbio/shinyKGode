@@ -619,3 +619,8 @@ third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     
     
 }
+
+solve_ode = function(kkk, params, xinit, tinterv) {
+    solved = kkk$solve_ode(par_ode=params, xinit, tinterv)
+    return(list(y_ode=kkk$y_ode, t=kkk$t))
+}

@@ -91,9 +91,32 @@ shinyUI(fluidPage(
                ),
                tabPanel(title="Results",
                         value="results",
-                        verbatimTextOutput('resultsType'),
-                        plotOutput('resultsPlot'),
-                        tableOutput('resultsTable'),
+                        h5("Plots"),
+                        # verbatimTextOutput('resultsType'),
+                        plotOutput('generateDataPlot'),
+                        conditionalPanel(
+                            condition = "input.plot_ode == 'initial'",  
+                            plotOutput('interpPlotInitial')
+                        ),
+                        conditionalPanel(
+                            condition = "input.plot_ode == 'inferred'",  
+                            plotOutput('interpPlotInferred')
+                        ),
+                        shinyjs::hidden(
+                            radioButtons("plot_ode", "Plot solved ODE using", c(
+                                "Initial parameters"="initial",
+                                "Inferred parameters"="inferred"
+                            ), inline=T)
+                        ),
+                        conditionalPanel(
+                            condition = "input.plot_ode == 'initial'",  
+                            tableOutput('initialParams')
+                        ),
+                        conditionalPanel(
+                            condition = "input.plot_ode == 'inferred'",  
+                            tableOutput('inferredParams')
+                        ),
+                        h5("Downloads"),
                         shinyjs::hidden(
                             downloadButton('downloadDataBtn', 'Download Generated Data')
                         ),

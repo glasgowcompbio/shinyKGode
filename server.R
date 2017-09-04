@@ -2,6 +2,7 @@ library(shiny)
 library(gridExtra)
 library(ggplot2)
 library(reshape2)
+library(shinyjs)
 
 source('scripts/rkhs_gradmatch_wrapper.r')
 
@@ -159,7 +160,7 @@ shinyServer(function(input, output, session) {
         model = getModel()
         
         updateTabsetPanel(session, "inTabset", selected="results")
-        output$resultsPlot = renderPlot({
+        output$generateDataPlot = renderPlot({
             
             plot_df = data.frame(y_no)
             plot_df$time = t
@@ -211,6 +212,10 @@ shinyServer(function(input, output, session) {
         values$data_from <- 'generated'
         res = getData()
         showData(input, output, session, res$time, res$y_no)
+        shinyjs::show('generateDataPlot')
+        shinyjs::hide('interpPlotInitial')
+        shinyjs::hide('interpPlotInferred')
+        shinyjs::hide('plot_ode')
     })    
     
     observeEvent(input$csv_file, {
@@ -225,7 +230,11 @@ shinyServer(function(input, output, session) {
         # print(paste('Infer seed is', SEED))
         set.seed(SEED)
         
-        shinyjs::disable("inferBtn")
+        shinyjs::disable('inferBtn')
+        shinyjs::hide('generateDataPlot')
+        shinyjs::show('interpPlotInitial')
+        shinyjs::show('interpPlotInferred')
+        shinyjs::show('plot_ode')
         updateTabsetPanel(session, "inTabset", selected="results")        
 
         res = getData()
@@ -269,112 +278,71 @@ shinyServer(function(input, output, session) {
             eps = input$eps
             infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
         }
-        
-        # for plotting: solve the ode using the new parameters
-        # params = get_values(input, 'param_val', model$numParams, model$params) # initial params
-        params = infer_res$ode_par # inferred params
-        xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
-        solved = values$kkk0$solve_ode(par_ode=params, xinit, tinterv)
-        solved_yode = values$kkk0$y_ode
-        solved_t = values$kkk0$t
-
-        df = data.frame(parameters=infer_res$ode_par)
-        rownames(df) = model$params
-
         values$infer_res = infer_res
-        values$df = df
-                    
+        
+        initial_params = get_values(input, 'param_val', model$numParams, model$params)
+        inferred_params = infer_res$ode_par
+        names(inferred_params) = names(initial_params)
+
+        xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
+        solved_initial = solve_ode(values$kkk0, initial_params, xinit, tinterv)
+        solved_inferred = solve_ode(values$kkk0, inferred_params, xinit, tinterv)
+
+        initial_df = data.frame(parameters=initial_params)
+        inferred_df = data.frame(parameters=inferred_params)
+        # rownames(inferred_df) = model$params
+        values$initial_df = initial_df
+        values$inferred_df = inferred_df
+        
         if (!is.null(res$sbml_data)) {
             detach(res$sbml_data)
         }
 
-        output$diagnosticPlot = renderPlot({
-
-            res = values$infer_res
-            objectives = res$objectives
-
-            # plot the objective function for gradient matching
-            df = as.data.frame(objectives)
-            iterations = seq_along(objectives)-1
-            g = ggplot(data=df, aes(y=objectives, x=iterations)) +
-                geom_line(size=1) +
-                geom_point() +
-                ggtitle('Optimisation Results') +
-                xlab("Iteration") +
-                ylab("Objective (f)") +
-                theme_bw() + theme(text = element_text(size=20)) + 
-                expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
-            return(g)
-
-        })
-
+        ### plot the interpolation fit ###
+        output$interpPlotInitial = get_interpolation_plot(values$infer_res, time, solved_initial, model$species) 
+        output$interpPlotInferred = get_interpolation_plot(values$infer_res, time, solved_inferred, model$species) 
         
-        # plot the warping functions for each state, if we have them
+        ### show the tables of initial & inferred parameters ###        
+        output$initialParams = renderTable({
+            values$initial_df
+        }, rownames=T, digits=6)
+        output$inferredParams = renderTable({
+            values$inferred_df
+        }, rownames=T, digits=6)
+    
+        # show/enable download and infer buttons
+        shinyjs::show("downloadParamsBtn")
+        shinyjs::enable("inferBtn")
+
+        # set the download handler for the inferred parameters        
+        output$downloadParamsBtn <- downloadHandler(
+            filename = function() { 'params.csv' },
+            content = function(file) {
+                write.csv(values$inferred_df, file)
+            }
+        )    
+        
+        ### plot the objective function for diagnostics
+        output$diagnosticPlot = get_diagnostic_plot(values$infer_res)
+        
+        ### plot the warping functions for each state ###
         # if (!is.null(res$warpfun_x[[1]])) {
-        
-            output$warpingPlot = renderPlot({
-                
-                res = values$infer_res
-                pp = list()
-                for (i in 1:res$nst) {
-                    
-                    warpfun_x = res$warpfun_x[[i]]
-                    warpfun_y = res$warpfun_y[[i]]
-                    warpfun_pred = res$warpfun_pred[[i]]
-                    
-                    title = 'Original'
-                    warp_df = as.data.frame(warpfun_x)
-                    warp_df$intp = warpfun_pred
-                    g1 = ggplot() +
-                        geom_line(data=warp_df, aes(x=warpfun_x, y=intp), size=1) +
-                        ggtitle(title) + 
-                        xlab("Original time") +
-                        ylab("Value") +
-                        theme_bw() + theme(text = element_text(size=20)) + 
-                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
-                        theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
-                    
-                    title = paste('State', model$species[i], ' - Warp func.', sep=' ')
-                    warp_df = as.data.frame(warpfun_x)
-                    warp_df$warpfun_y = warpfun_y
-                    g2 = ggplot() +
-                        geom_line(data=warp_df, aes(x=warpfun_x, y=warpfun_y), size=1) +
-                        ggtitle(title) + 
-                        xlab("Original time") +
-                        ylab("Warped time") +
-                        theme_bw() + theme(text = element_text(size=20)) + 
-                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
-                        theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
-
-                    title = 'Warped'
-                    warp_df = as.data.frame(warpfun_y)
-                    warp_df$intp = warpfun_pred
-                    g3 = ggplot() +
-                        geom_line(data=warp_df, aes(x=warpfun_y, y=intp), size=1) +
-                        ggtitle(title) + 
-                        xlab("Warped time") +
-                        ylab("Value") +
-                        theme_bw() + theme(text = element_text(size=20)) + 
-                        expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
-                        theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
-                                        
-                    pp[[i]] = grid.arrange(g1, g2, g3, ncol=3)
-                    
-                }
-                
-                do.call(grid.arrange, pp)
-                
-            })
-                
+            output$warpingPlot = get_warping_plot(values$infer_res, model$species)
         # }
         
+        ### print diagnostic output
         output$console = renderPrint({
             values$infer_res$output
         })
-                
-        output$resultsPlot = renderPlot({
-
-            res = values$infer_res
+        
+    })
+    
+    get_interpolation_plot = function(res, time, solved, species) {
+        
+        return(renderPlot({
+            
+            solved_yode = solved$y_ode
+            solved_t = solved$t
             pp = list()
             for (i in 1:res$nst) {
                 
@@ -384,7 +352,7 @@ shinyServer(function(input, output, session) {
                 data_y = res$data_y[[i]]
                 solved_y = solved_yode[i, ]
                 solved_x = solved_t
-
+                
                 time = intp_x
                 plot_df1 = data.frame(time)
                 plot_df1$interpolated = intp_y
@@ -405,7 +373,7 @@ shinyServer(function(input, output, session) {
                 temp1 = subset(plot_df, type=='interpolated')
                 temp3 = subset(plot_df, type=='solved')
                 
-                title = paste('State', model$species[i], sep=' ')
+                title = paste('State', species[i], sep=' ')
                 g = ggplot() + 
                     geom_point(data=temp2, aes(x=time, y=value, colour='c1')) +
                     geom_line(data=temp1, aes(x=time, y=value, colour='c2'), size=1) +
@@ -417,26 +385,92 @@ shinyServer(function(input, output, session) {
                     expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
                 
                 pp[[i]] = g
-
+                
             }
             do.call(grid.arrange, pp)
-
-        })    
+            
+        }))      
         
-        output$resultsTable = renderTable({
-            values$df
-        }, rownames=T, digits=4)
+    }
     
-        shinyjs::show("downloadParamsBtn")
-        shinyjs::enable("inferBtn")
+    get_diagnostic_plot = function(res) {
         
-        output$downloadParamsBtn <- downloadHandler(
-            filename = function() { 'params.csv' },
-            content = function(file) {
-                write.csv(values$df, file)
+        return(renderPlot({
+            
+            objectives = res$objectives
+            
+            # plot the objective function for gradient matching
+            df = as.data.frame(objectives)
+            iterations = seq_along(objectives)-1
+            g = ggplot(data=df, aes(y=objectives, x=iterations)) +
+                geom_line(size=1) +
+                geom_point() +
+                ggtitle('Optimisation Results') +
+                xlab("Iteration") +
+                ylab("Objective (f)") +
+                theme_bw() + theme(text = element_text(size=20)) + 
+                expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+            return(g)
+            
+        }))
+        
+    }
+    
+    get_warping_plot = function(res, species) {
+        
+        return(renderPlot({
+            
+            pp = list()
+            for (i in 1:res$nst) {
+                
+                warpfun_x = res$warpfun_x[[i]]
+                warpfun_y = res$warpfun_y[[i]]
+                warpfun_pred = res$warpfun_pred[[i]]
+                
+                title = 'Original'
+                warp_df = as.data.frame(warpfun_x)
+                warp_df$intp = warpfun_pred
+                g1 = ggplot() +
+                    geom_line(data=warp_df, aes(x=warpfun_x, y=intp), size=1) +
+                    ggtitle(title) + 
+                    xlab("Original time") +
+                    ylab("Value") +
+                    theme_bw() + theme(text = element_text(size=20)) + 
+                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
+                    theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                
+                title = paste('State', species[i], ' - Warp func.', sep=' ')
+                warp_df = as.data.frame(warpfun_x)
+                warp_df$warpfun_y = warpfun_y
+                g2 = ggplot() +
+                    geom_line(data=warp_df, aes(x=warpfun_x, y=warpfun_y), size=1) +
+                    ggtitle(title) + 
+                    xlab("Original time") +
+                    ylab("Warped time") +
+                    theme_bw() + theme(text = element_text(size=20)) + 
+                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
+                    theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                
+                title = 'Warped'
+                warp_df = as.data.frame(warpfun_y)
+                warp_df$intp = warpfun_pred
+                g3 = ggplot() +
+                    geom_line(data=warp_df, aes(x=warpfun_y, y=intp), size=1) +
+                    ggtitle(title) + 
+                    xlab("Warped time") +
+                    ylab("Value") +
+                    theme_bw() + theme(text = element_text(size=20)) + 
+                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
+                    theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                
+                pp[[i]] = grid.arrange(g1, g2, g3, ncol=3)
+                
             }
-        )    
+            
+            do.call(grid.arrange, pp)
+            
+        }))        
         
-    })
+    }
     
 })
