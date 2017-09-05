@@ -51,6 +51,8 @@ shinyServer(function(input, output, session) {
     
     showModel = function(input, output, res) {
 
+        shinyjs::enable('csv_file')
+        shinyjs::enable('generateBtn')
         removeUI(selector = '#placeholderParams *', multiple=TRUE)
         removeUI(selector = '#placeholderStates *', multiple=TRUE)
         

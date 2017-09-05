@@ -30,11 +30,13 @@ shinyUI(fluidPage(
                helpText(a("Download SBML Editor", href="http://www.ebi.ac.uk/compneur-srv/SBMLeditor.html", target="_blank")),
                tags$hr(),
                h4("Load Data"),
-               fileInput("csv_file", "Choose a CSV File",
-                         accept = c(
-                             "application/octet-stream",
-                             "binary/hdf5",
-                             ".hdf5")
+               shinyjs::disabled(
+                   fileInput("csv_file", "Choose a CSV File",
+                             accept = c(
+                                 "application/octet-stream",
+                                 "binary/hdf5",
+                                 ".hdf5")
+                   )
                ),
                h4("Generate Data"),
                helpText(("Time Points.")),
@@ -49,10 +51,9 @@ shinyUI(fluidPage(
                        "dB"="db"
                    ), inline=F))
                ),
-               # shinyjs::disabled(
-               #    numericInput("timePointsStep", "Time Points (Step)", value=0, min=0, max=NA, step=1)
-               # ),
-               actionButton("generateBtn", "Generate"),               
+               shinyjs::disabled(
+                   actionButton("generateBtn", "Generate")
+               ),
         style="overflow-x: scroll; overflow-y: scroll"),
 
         column(10,
@@ -118,7 +119,7 @@ shinyUI(fluidPage(
                         ),
                         h5("Downloads"),
                         shinyjs::hidden(
-                            downloadButton('downloadDataBtn', 'Download Generated Data')
+                            downloadButton('downloadDataBtn', 'Download Data')
                         ),
                         shinyjs::hidden(
                             downloadButton('downloadParamsBtn', 'Download Inferred Parameters')
