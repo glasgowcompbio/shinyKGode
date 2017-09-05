@@ -16,6 +16,8 @@ library(deSolve)
 library(pracma)
 library(mvtnorm)
 library(SBMLR)
+library(libSBML)
+library(tools)
 
 ### define ode 
 LV_fun = function(t,x,par_ode){
@@ -306,7 +308,7 @@ generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv,
                           noise, noise_unit, numSpecies, params) {
     
     if (model_from == 'uploaded') { # generate data using the model from an SBML file
-        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, noise, noise_unit)
+        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, noise, noise_unit, pick=1)
     } else if (model_from == 'selected') { # generate data using predefined models
         res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params, 
                                            noise, noise_unit)
@@ -351,7 +353,12 @@ load_sbml <- function(f) {
 
 get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_model) {
 
-    df <- read.csv(file=csv_file, header=TRUE, sep=",")
+    ext = file_ext(csv_file)
+    if (ext == 'csv') {
+        df <- read.csv(file=csv_file, header=TRUE, sep=",")
+    } else if (ext == 'rds') {
+        df = readRDS('df.rds')
+    }
     x = as.matrix(df)
 
     init_time = x[, 1]
