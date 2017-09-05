@@ -47,8 +47,8 @@ shinyUI(fluidPage(
                    column(4, numericInput("timePointsPick", "Pick", value=1, min=1, max=NA, step=1))
                ),
                fluidRow(
-                   column(6, numericInput("noise", "Noise", value=0.1, min=0, max=NA, step=0.1)),
-                   column(6, radioButtons("noise_unit", '', c(
+                   column(4, numericInput("noise", "Noise", value=0.1, min=0, max=NA, step=0.1)),
+                   column(4, radioButtons("noise_unit", '', c(
                        "Variance"="var",
                        "dB"="db"
                    ), inline=F))
