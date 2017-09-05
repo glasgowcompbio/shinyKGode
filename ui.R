@@ -17,8 +17,9 @@ shinyUI(fluidPage(
     
     fluidRow(
 
-        column(2,
+        column(3,
                h4("Define Model"),
+               helpText("You can select from the list of predefined models or upload your own model in SBML. Uploading SBML instead of selecting a predefined model will use numerical gradients."),
                selectInput("selected_model", "Select a predefined model", modelChoices),               
                fileInput("sbml_file", "Or upload an SBML model",
                          accept = c(
@@ -26,10 +27,10 @@ shinyUI(fluidPage(
                              "binary/hdf5",
                              ".hdf5")
                ),        
-               helpText("Uploading SBML instead of selecting a predefined model will use numerical gradients."),
                helpText(a("Download SBML Editor", href="http://www.ebi.ac.uk/compneur-srv/SBMLeditor.html", target="_blank")),
                tags$hr(),
                h4("Load Data"),
+               helpText(("Data should be in a CSV format with column headers. The first column is header is 'time', while other column headers are the individual states.")),
                shinyjs::disabled(
                    fileInput("csv_file", "Choose a CSV File",
                              accept = c(
@@ -39,10 +40,11 @@ shinyUI(fluidPage(
                    )
                ),
                h4("Generate Data"),
-               helpText(("Time Points.")),
+               helpText(("Specify the start time, end time and every n-th time points to pick.")),
                fluidRow(
-                   column(6, numericInput("timePointsMin", "Min", value=0, min=0, max=NA, step=1)),
-                   column(6, numericInput("timePointsMax", "Max", value=6, min=0, max=NA, step=1))
+                   column(4, numericInput("timePointsMin", "Start", value=0, min=0, max=NA, step=1)),
+                   column(4, numericInput("timePointsMax", "End", value=10, min=0, max=NA, step=1)),
+                   column(4, numericInput("timePointsPick", "Pick", value=1, min=1, max=NA, step=1))
                ),
                fluidRow(
                    column(6, numericInput("noise", "Noise", value=0.1, min=0, max=NA, step=0.1)),
@@ -56,7 +58,7 @@ shinyUI(fluidPage(
                ),
         style="overflow-x: scroll; overflow-y: scroll"),
 
-        column(10,
+        column(9,
            tabsetPanel(id = "inTabset",
                tabPanel(title="Inference",
                         value="inference",

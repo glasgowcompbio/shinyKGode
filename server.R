@@ -90,6 +90,7 @@ shinyServer(function(input, output, session) {
         
         updateNumericInput(session, "timePointsMin", value = res$tinterv[1])
         updateNumericInput(session, "timePointsMax", value = res$tinterv[2])
+        updateNumericInput(session, "timePointsPick", value = res$pick)
         updateNumericInput(session, "noise", value = res$noise)
         updateRadioButtons(session, "noise_unit", selected="var")
         updateNumericInput(session, "eps", value = res$eps)
@@ -148,9 +149,10 @@ shinyServer(function(input, output, session) {
 
             xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
             tinterv = c(input$timePointsMin, input$timePointsMax)
+            pick = input$timePointsPick
             res = generate_data(values$model_from, input$sbml_file$datapath, input$selected_model, 
                                 xinit, tinterv, input$noise, input$noise_unit, 
-                                model$numSpecies, params)
+                                model$numSpecies, params, pick)
 
         }
         

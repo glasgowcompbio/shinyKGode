@@ -15,7 +15,9 @@ library(R6)
 library(deSolve)
 library(pracma)
 library(mvtnorm)
-library(SBMLR)
+library(devtools)
+install_github("joewandy/SBMLR")
+# library(SBMLR)
 library(libSBML)
 library(tools)
 
@@ -49,6 +51,7 @@ LV_initial_values = function() {
     paramsVals = c(1, 1, 4, 1)
     
     tinterv = c(0, 6)
+    pick = 2
     noise_var = 0.1    
     
     peod = c(6, 5.3) #8#9.7     ## the guessing period
@@ -56,7 +59,7 @@ LV_initial_values = function() {
     
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var,
+                tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
     
 }
@@ -88,6 +91,7 @@ FN_initial_values = function() {
     paramsVals = c(0.2, 0.2, 3)
     
     tinterv = c(0, 10)
+    pick = 2
     noise_var = 0.01    
     
     peod = c(8, 8.5) #8#9.7     ## the guessing period
@@ -95,7 +99,7 @@ FN_initial_values = function() {
     
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var,
+                tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
     
 }
@@ -138,6 +142,7 @@ BP_initial_values = function() {
     paramsVals = c(0.07, 0.6, 0.05, 0.3, 0.017, 0.3)
     
     tinterv = c(0, 100)
+    pick = NA
     noise_var = 0.017^2  
     
     peod = c(200, 200, 200, 200, 200)   ## the guessing period for each state  user defined
@@ -145,7 +150,7 @@ BP_initial_values = function() {
     
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var,
+                tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
     
 }
@@ -195,13 +200,14 @@ get_initial_values_sbml = function(inFile) {
     
     # just some randomly selected default values
     tinterv = c(0, 10)
+    pick = 1
     noise_var = 0.1  
     peod = rep(1, numParams)
     eps = 1
     
     return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial, 
                 numParams=numParams, params=params, paramsVals=paramsVals,
-                tinterv=tinterv, noise_var=noise_var,
+                tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
     
 }
@@ -223,12 +229,12 @@ add_noise <- function(x, snr_db) {
 }
 
 generate_data_selected_model = function(selected_model, xinit, tinterv, numSpecies, 
-                                           paramsVals, noise, noise_unit) {
+                                           paramsVals, noise, noise_unit, pick) {
 
     npar = length(paramsVals)
     if (selected_model == "lv") {
         
-        kkk0 = ode$new(2, fun=LV_fun, grfun=LV_grlNODE)
+        kkk0 = ode$new(pick, fun=LV_fun, grfun=LV_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
@@ -237,7 +243,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
         
     } else if (selected_model == "fhg") {
         
-        kkk0 = ode$new(2,fun=FN_fun,grfun=FN_grlNODE)
+        kkk0 = ode$new(pick,fun=FN_fun,grfun=FN_grlNODE)
         kkk0$solve_ode(paramsVals, xinit, tinterv)
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
@@ -250,11 +256,11 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
         kkk0$solve_ode(paramsVals, xinit, tinterv)
         start = 6
         select = 2
-        pick = c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
+        ppick = c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
         
         init_par = rep(c(0.1), npar)
-        init_yode = kkk0$y_ode[,pick]
-        init_t = kkk0$t[pick]
+        init_yode = kkk0$y_ode[,ppick]
+        init_t = kkk0$t[ppick]
         kkk = ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     }
@@ -274,7 +280,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
 
 }
 
-generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit, pick=1) {
+generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit, pick) {
     
     res = get_ode_fun(f, params)
     model = res$model
@@ -305,13 +311,14 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit
 }
 
 generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv, 
-                          noise, noise_unit, numSpecies, params) {
+                          noise, noise_unit, numSpecies, params, pick) {
     
     if (model_from == 'uploaded') { # generate data using the model from an SBML file
-        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, noise, noise_unit, pick=1)
+        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, 
+                                      noise, noise_unit, pick)
     } else if (model_from == 'selected') { # generate data using predefined models
         res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params, 
-                                           noise, noise_unit)
+                                           noise, noise_unit, pick)
     }
     return(res)
     
