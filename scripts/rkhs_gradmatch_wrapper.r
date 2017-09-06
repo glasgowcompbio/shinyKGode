@@ -15,11 +15,12 @@ library(R6)
 library(deSolve)
 library(pracma)
 library(mvtnorm)
-library(devtools)
-install_github("joewandy/SBMLR")
-# library(SBMLR)
-library(libSBML)
 library(tools)
+
+# library(SBMLR)
+library(devtools)
+# install_github("joewandy/SBMLR")
+install('/Users/joewandy/git/SBMLR/')
 
 ### define ode 
 LV_fun = function(t,x,par_ode){
@@ -173,30 +174,15 @@ get_initial_values_selected = function(selected_model) {
 get_initial_values_sbml = function(inFile) {
     
     print(inFile)
-    d = libSBML:::readSBML(inFile$datapath);
+    res = load_sbml(inFile$datapath)
     
-    errors   = SBMLDocument_getNumErrors(d);
-    SBMLDocument_printErrors(d);
-    m = SBMLDocument_getModel(d);
+    numSpecies = res$mi$nSpecies
+    species = res$mi$sIDs
+    speciesInitial = unname(res$mi$y0)
     
-    params = character(0);
-    paramsVals = vector();
-    for(i in seq_len(Model_getNumParameters( m ))) {
-        sp = Model_getParameter( m, i-1);
-        params = c(params, Parameter_getId(sp));
-        paramsVals = c(paramsVals, Parameter_getValue(sp));
-    }
-    
-    species = character(0);
-    speciesInitial = vector()
-    for(i in seq_len(Model_getNumSpecies(m))) {
-        sp = Model_getSpecies(m, i-1);
-        species = c(species, Species_getId(sp));
-        speciesInitial = c(speciesInitial, Species_getInitialConcentration(sp));
-    }
-    
-    numSpecies = Model_getNumSpecies(m)
-    numParams = Model_getNumParameters(m)
+    numParams = length(res$params)
+    params = names(res$params)
+    paramsVals = unname(res$params)
     
     # just some randomly selected default values
     tinterv = c(0, 10)
