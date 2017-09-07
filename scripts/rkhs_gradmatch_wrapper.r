@@ -17,10 +17,10 @@ library(pracma)
 library(mvtnorm)
 library(tools)
 
-# library(SBMLR)
 library(devtools)
 # install_github("joewandy/SBMLR")
 install('/Users/joewandy/git/SBMLR/')
+library(SBMLR)
 
 ### define ode 
 LV_fun = function(t,x,par_ode){
@@ -266,14 +266,31 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
 
 }
 
+# https://stackoverflow.com/questions/26057400/r-how-do-you-merge-combine-two-environments
+appendEnv = function(e1, e2) {
+    e1name = deparse(substitute(e1))
+    e2name = deparse(substitute(e2))
+    listE1 = ls(e1)
+    listE2 = ls(e2)
+    for(v in listE2) {
+        # if(v %in% listE1) warning(sprintf("Variable %s is in e1, too!", v))
+        e1[[v]] = e2[[v]]
+    }
+}
+
 generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit, pick) {
     
     res = get_ode_fun(f, params)
     model = res$model
     mi = res$mi
-    ode_fun = res$ode_fun
     initial_names = names(params)
     
+    ode_fun = res$ode_fun
+    work_env = environment(ode_fun)
+    param_env = list2env(model$globalParameters)
+    appendEnv(work_env, param_env) # appends global parameters into work_env
+    work_env$initial_names = initial_names
+
     kkk0 = ode$new(pick, fun=ode_fun)
     xinit = as.matrix(mi$S0)
     kkk0$solve_ode(par_ode=params, xinit, tinterv)
@@ -289,7 +306,7 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit
     } else if (noise_unit == 'db') {
         y_no =  add_noise(kkk$y_ode, noise)
     } 
-    
+
     sbml_data = list(model=model, mi=mi, initial_names=initial_names)
     res = list(time=kkk$t, y_no=y_no, kkk=kkk, sbml_data=sbml_data, tinterv=tinterv, kkk0=kkk0)
     return(res)
@@ -326,7 +343,7 @@ add_no_duplicate <- function(v1, v2) {
 #    then summary() will break ???!!
 load_sbml <- function(f) {
 
-    model = SBMLR:::readSBML(f)
+    model = readSBML(f)
     mi = summary(model)
 
     # collect all the params
@@ -382,7 +399,7 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
 
 get_ode_fun <- function(f, params) {
     
-    model = SBMLR:::readSBML(f)
+    model = readSBML(f)
     mi = summary(model)
     initial_names = names(params)
     
@@ -399,14 +416,23 @@ get_ode_fun <- function(f, params) {
         
         if (mi$nRules > 0) 
             for (j in 1:mi$nRules) St[model$rules[[j]]$idOutput] = model$rules[[j]]$law(St[model$rule[[j]]$inputs])
-        
+
+        # par_ode should contain both the local AND global parameters from the SBML
+        param_env = list2env(as.list(par_ode)) 
         for (j in 1:mi$nReactions) {
+            
             mrj = model$reactions[[j]]
             rm = c(mrj$reactants, mrj$modifiers)
+            
             # P is now passed from outside as par_ode
             # P = mrj$parameters
             # v[j] = mrj$law(St[rm], P)
+            
+            f = mrj$law
+            work_env = environment(f)
+            appendEnv(work_env, param_env) # appends global parameters into work_env
             v[j] = mrj$law(St[rm], par_ode)
+            
         }
         
         xp = mi$incid %*% v

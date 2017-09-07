@@ -4,14 +4,14 @@ SEED = 19537
 set.seed(SEED)
 
 ## try Lotka-Volterra model
-
 f = '/Users/joewandy/git/rkhs_gradmatch_gui/SBML/LotkaVolterra.xml';
 noise = 0.1  ## 10db:34 1 20db:34 0.1  30db:2 0.01   40db:18 0.001
-samp = 2
+noise_unit = 'var'
 xinit = as.matrix(c(0.5,1))
 tinterv = c(0,6)
 params = c(alpha=1,beta=1,gamma=4,delta=1)
-res = generate_data_from_sbml(f, xinit, tinterv, params, samp, noise)
+pick = 2
+res = generate_data_from_sbml(f, xinit, tinterv, params, noise, noise_unit, pick)
 
 kkk = res$kkk
 y_no = res$y_no
