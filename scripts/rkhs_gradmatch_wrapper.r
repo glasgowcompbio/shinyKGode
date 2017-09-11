@@ -367,7 +367,7 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
     if (ext == 'csv') {
         df <- read.csv(file=csv_file, header=TRUE, sep=",")
     } else if (ext == 'rds') {
-        df = readRDS('df.rds')
+        df = readRDS(csv_file)
     }
     x = as.matrix(df)
 
