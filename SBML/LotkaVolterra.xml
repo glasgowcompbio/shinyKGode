@@ -9,10 +9,10 @@
       <species compartment="compartment" id="X2" initialConcentration="1"/>
     </listOfSpecies>
     <listOfParameters>
-      <parameter name="alpha" constant="true" id="alpha" value="1"/>
-      <parameter name="beta" constant="true" id="beta" value="1"/>
-      <parameter name="gamma" constant="true" id="gamma" value="4"/>
-      <parameter name="delta" constant="true" id="delta" value="1"/>
+      <parameter name="alpha" id="alpha" value="1"/>
+      <parameter name="beta" id="beta" value="1"/>
+      <parameter name="gamma" id="gamma" value="4"/>
+      <parameter name="delta" id="delta" value="1"/>
     </listOfParameters>
     <listOfReactions>
       <reaction id="R1">
