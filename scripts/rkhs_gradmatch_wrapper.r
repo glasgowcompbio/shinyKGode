@@ -630,7 +630,7 @@ third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
 
     update_status(progress, 'Cross-validating', 'inc', 0.75)    
-    output4 = capture.output(lamwil <- crossv(lam,kkkrkg,bbb,crtype,y_no,woption,resmtest,dtilda)) 
+    output4 = capture.output(lamwil <- crossv(lam,wkkk,bbbw,crtype,y_no,woption,resmtest,dtilda)) 
     
     update_status(progress, 'Third-step', 'inc', 0.90)    
     lambdawi=lamwil[[1]]
