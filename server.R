@@ -32,7 +32,7 @@ shinyServer(function(input, output, session) {
         kkk0 = NULL
     )    
         
-    getModel = reactive({
+    getModelParameters = reactive({
 
         if (is.null(values$model_from)) {
             res = NULL
@@ -100,7 +100,7 @@ shinyServer(function(input, output, session) {
     observeEvent(input$selected_model, {
 
         values$model_from <- 'selected'
-        res = getModel()
+        res = getModelParameters()
         
         if (!is.null(res)) { # load one of the three pre-defined models, null otherwise
             showModel(input, output, res)
@@ -113,7 +113,7 @@ shinyServer(function(input, output, session) {
     observeEvent(input$sbml_file, {
 
         values$model_from <- 'uploaded'
-        sbml = getModel()
+        sbml = getModelParameters()
         showModel(input, output, sbml)
 
     })    
@@ -133,7 +133,7 @@ shinyServer(function(input, output, session) {
         # print(paste('Get data seed is', SEED))
         set.seed(SEED)
         
-        model = getModel()
+        model = getModelParameters()
         params = get_values(input, 'param_val', model$numParams, model$params)
         
         if (is.null(values$data_from)) { # should never happen
@@ -163,7 +163,7 @@ shinyServer(function(input, output, session) {
     
     showData = function(input, output, session, t, y_no) {
         
-        model = getModel()
+        model = getModelParameters()
         
         updateTabsetPanel(session, "inTabset", selected="results")
         output$generateDataPlot = renderPlot({
@@ -248,7 +248,7 @@ shinyServer(function(input, output, session) {
         y_no = res$y_no
         tinterv = res$tinterv
         
-        model = getModel()
+        model = getModelParameters()
         nst = model$numSpecies
 
         progress <- shiny::Progress$new()
