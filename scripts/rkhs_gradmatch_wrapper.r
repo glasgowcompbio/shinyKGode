@@ -147,7 +147,7 @@ BP_initial_values = function() {
     
     tinterv = c(0, 100)
     pick = NA
-    noise_var = 0.017^2  
+    noise_var = 0.000289 # 0.017^2 
     
     peod = c(200, 200, 200, 200, 200)   ## the guessing period for each state  user defined
     eps= 20          ## the standard deviation of period  user defined
