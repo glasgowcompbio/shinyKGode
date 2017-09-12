@@ -28,6 +28,9 @@ LV_fun = function(t,x,par_ode){
     beta=par_ode[2]
     gamma=par_ode[3]
     delta=par_ode[4]
+    # incid = matrix(c(1, 0, -1, 0, 0, -1, 0, 1), nrow=2, ncol=4)
+    # v = c(alpha*x[1], beta*x[2]*x[1], gamma*x[2], delta*x[1]*x[2])
+    # incid %*% v
     as.matrix( c( alpha*x[1]-beta*x[2]*x[1] , -gamma*x[2]+delta*x[1]*x[2] ) )
 }
 
