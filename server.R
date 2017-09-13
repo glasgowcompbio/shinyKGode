@@ -4,7 +4,7 @@ library(ggplot2)
 library(reshape2)
 library(shinyjs)
 
-source('scripts/rkhs_gradmatch_wrapper.r')
+source('rkhs_gradmatch_functions.r')
 
 SEED = 19537
 set.seed(SEED)

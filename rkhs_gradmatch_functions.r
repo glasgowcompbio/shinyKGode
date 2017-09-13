@@ -18,8 +18,8 @@ library(mvtnorm)
 library(tools)
 
 library(devtools)
-# install_github("joewandy/SBMLR")
-install('/Users/joewandy/git/SBMLR/')
+install_github("joewandy/SBMLR")
+# install('/Users/joewandy/git/SBMLR/')
 library(SBMLR)
 
 ### define ode 
