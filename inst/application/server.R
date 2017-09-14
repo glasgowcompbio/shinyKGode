@@ -420,7 +420,7 @@ shiny::shinyServer(function(input, output, session) {
                     ggplot2::ylab("Value") +
                     ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
                     ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
-                    ggplot2::theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                    ggplot2::theme(plot.margin = ggplot2::unit(c(0.5,0.5,0.5,0.5), "cm"))
 
                 title = paste('State', species[i], ' - Warp func.', sep=' ')
                 warp_df = as.data.frame(warpfun_x)
@@ -432,7 +432,7 @@ shiny::shinyServer(function(input, output, session) {
                     ggplot2::ylab("Warped time") +
                     ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
                     ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
-                    ggplot2::theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                    ggplot2::theme(plot.margin = ggplot2::unit(c(0.5,0.5,0.5,0.5), "cm"))
 
                 title = 'Warped'
                 warp_df = as.data.frame(warpfun_y)
@@ -444,7 +444,7 @@ shiny::shinyServer(function(input, output, session) {
                     ggplot2::ylab("Value") +
                     ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
                     ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
-                    ggplot2::theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+                    ggplot2::theme(plot.margin = ggplot2::unit(c(0.5,0.5,0.5,0.5), "cm"))
 
                 pp[[i]] = gridExtra::grid.arrange(g1, g2, g3, ncol=3)
 
