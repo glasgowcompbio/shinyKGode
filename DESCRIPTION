@@ -20,7 +20,8 @@ Imports:
     SBMLR,
     gradmatch
 Depends:
-    pracma
+    pracma,
+    pspline
 Remotes:
     joewandy/SBMLR,
     joewandy/gradmatch
