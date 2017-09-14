@@ -544,7 +544,8 @@ warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     output2 = capture.output(fixlens <- gradmatch::warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
 
     update_status(progress, 'Warping', 'inc', 0.5)
-    output3 = capture.output(www <- gradmatch::warpfun(kkk, bbb, peod, eps, fixlens, y_no, kkk$t))
+    kkkrkg = kkk$clone()    
+    output3 = capture.output(www <- gradmatch::warpfun(kkkrkg, bbb, peod, eps, fixlens, y_no, kkkrkg$t))
     update_status(progress, 'Completed', 'inc', 1)
 
     dtilda= www$dtilda
