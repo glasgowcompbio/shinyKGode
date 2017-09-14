@@ -239,10 +239,6 @@ shiny::shinyServer(function(input, output, session) {
         progress <- shiny::Progress$new()
         on.exit(progress$close())
 
-        if (!is.null(res$sbml_data)) {
-            attach(res$sbml_data)
-        }
-
         if (input$ode_reg == 'on' && input$warping == 'on') {
             method = '3rd+warping'
         } else {
@@ -284,10 +280,6 @@ shiny::shinyServer(function(input, output, session) {
         # rownames(inferred_df) = model$params
         values$initial_df = initial_df
         values$inferred_df = inferred_df
-
-        if (!is.null(res$sbml_data)) {
-            detach(res$sbml_data)
-        }
 
         ### plot the interpolation fit ###
         output$interpPlotInitial = get_interpolation_plot(values$infer_res, time, solved_initial, model$species)
