@@ -1,38 +1,23 @@
-library(shiny)
-library(gridExtra)
-library(ggplot2)
-library(reshape2)
-library(shinyjs)
+shiny::shinyServer(function(input, output, session) {
 
-source('rkhs_gradmatch_functions.r')
-
-SEED = 19537
-set.seed(SEED)
-modelChoices = c("---" = "",
-                 "Lotka-Volterra" = "lv",
-                 "Fiz hugh Nagumo" = "fhg",
-                 "Biopathway" = "bp")
-
-shinyServer(function(input, output, session) {
-   
-    observeEvent(input$process, {
-        insertUI(
+    shiny::observeEvent(input$process, {
+        shiny::insertUI(
             selector = "#add",
             where = "afterEnd",
-            ui = textInput(paste0("txt", input$add),
+            ui = shiny::textInput(paste0("txt", input$add),
                            "Insert some text")
         )
-    })    
+    })
 
-    values <- reactiveValues(
+    values <- shiny::reactiveValues(
         model_from = NULL,
         data_from = NULL,
         infer_res = NULL,
         df = NULL,
         kkk0 = NULL
-    )    
-        
-    getModelParameters = reactive({
+    )
+
+    getModelParameters = shiny::reactive({
 
         if (is.null(values$model_from)) {
             res = NULL
@@ -44,80 +29,80 @@ shinyServer(function(input, output, session) {
         return(res)
 
     })
-    
+
     resetScreen = function(input, output) {
-        removeUI(selector = '#placeholderParams *', multiple=TRUE)
+        shiny::removeUI(selector = '#placeholderParams *', multiple=TRUE)
     }
-    
+
     showModel = function(input, output, res) {
 
         shinyjs::enable('csv_file')
         shinyjs::enable('generateBtn')
-        removeUI(selector = '#placeholderParams *', multiple=TRUE)
-        removeUI(selector = '#placeholderStates *', multiple=TRUE)
-        
-        output$odeParameters = renderText({ paste(res$params, collapse=", " ) })        
+        shiny::removeUI(selector = '#placeholderParams *', multiple=TRUE)
+        shiny::removeUI(selector = '#placeholderStates *', multiple=TRUE)
+
+        output$odeParameters = shiny::renderText({ paste(res$params, collapse=", " ) })
         for (i in 1:res$numParams) {
             paramValId = paste0('param_val', i)
             paramValLabel = res$params[i]
             insertUI(
                 selector = '#placeholderParams',
-                ui = fluidRow(
-                    column(12, numericInput(paramValId, paramValLabel, value=res$paramsVals[i], 
+                ui = shiny::fluidRow(
+                    shiny::column(12, numericInput(paramValId, paramValLabel, value=res$paramsVals[i],
                                             min=0, max=NA, step=1))
-                )                    
+                )
             )
         }
-        
+
         labels = c()
         for (i in 1:res$numSpecies) {
             initCondId = paste0('initial_cond', i)
             initCondLabel = paste0(res$species[i], " Initial Cond.")
             guessId = paste0('p0_', i)
             guessLabel = 'Guess Period'
-            insertUI(
+            shiny::insertUI(
                 selector = '#placeholderStates',
-                ui = fluidRow(
-                    column(6, numericInput(initCondId, initCondLabel, value=res$speciesInitial[i], 
+                ui = shiny::fluidRow(
+                    column(6, shiny::numericInput(initCondId, initCondLabel, value=res$speciesInitial[i],
                                            min=0, max=NA, step=0.1)),
-                    column(6, numericInput(guessId, guessLabel, value=res$peod[i], 
+                    column(6, shiny::numericInput(guessId, guessLabel, value=res$peod[i],
                                            min=0, max=NA, step=0.1))
-                )                    
+                )
             )
             labels = c(labels, res$species[i])
         }
-        output$systemStates = renderText({ paste(labels, collapse=", " ) })
-        
-        updateNumericInput(session, "timePointsMin", value = res$tinterv[1])
-        updateNumericInput(session, "timePointsMax", value = res$tinterv[2])
-        updateNumericInput(session, "timePointsPick", value = res$pick)
-        updateNumericInput(session, "noise", value = res$noise)
-        updateRadioButtons(session, "noise_unit", selected="var")
-        updateNumericInput(session, "eps", value = res$eps)
+        output$systemStates = shiny::renderText({ paste(labels, collapse=", " ) })
+
+        shiny::updateNumericInput(session, "timePointsMin", value = res$tinterv[1])
+        shiny::updateNumericInput(session, "timePointsMax", value = res$tinterv[2])
+        shiny::updateNumericInput(session, "timePointsPick", value = res$pick)
+        shiny::updateNumericInput(session, "noise", value = res$noise)
+        shiny::updateRadioButtons(session, "noise_unit", selected="var")
+        shiny::updateNumericInput(session, "eps", value = res$eps)
 
     }
-    
-    observeEvent(input$selected_model, {
+
+    shiny::observeEvent(input$selected_model, {
 
         values$model_from <- 'selected'
         res = getModelParameters()
-        
+
         if (!is.null(res)) { # load one of the three pre-defined models, null otherwise
             showModel(input, output, res)
         } else { # no predefined model is selected
             resetScreen(input, output)
         }
-        
+
     })
-    
-    observeEvent(input$sbml_file, {
+
+    shiny::observeEvent(input$sbml_file, {
 
         values$model_from <- 'uploaded'
         sbml = getModelParameters()
         showModel(input, output, sbml)
 
-    })    
-    
+    })
+
     get_values = function(input, id, n, param_names) {
         vals = numeric(0)
         for (i in 1:n) {
@@ -126,81 +111,81 @@ shinyServer(function(input, output, session) {
         names(vals) = param_names
         return(vals)
     }
-    
-    getData = reactive({
+
+    getData = shiny::reactive({
 
         SEED = input$seed
         # print(paste('Get data seed is', SEED))
         set.seed(SEED)
-        
+
         model = getModelParameters()
         params = get_values(input, 'param_val', model$numParams, model$params)
-        
+
         if (is.null(values$data_from)) { # should never happen
-            
+
             res = NULL
-            
+
         } else if (values$data_from == 'uploaded') { # for data uploaded by the user
 
-            res = get_data_from_csv(input$csv_file$datapath, input$sbml_file$datapath, 
+            res = get_data_from_csv(input$csv_file$datapath, input$sbml_file$datapath,
                                     params, values$model_from, input$selected_model)
-            
+
         } else if (values$data_from == 'generated') { # for data generated by the user
 
             xinit = as.matrix(get_values(input, 'initial_cond', model$numSpecies, model$species))
             tinterv = c(input$timePointsMin, input$timePointsMax)
             pick = input$timePointsPick
-            res = generate_data(values$model_from, input$sbml_file$datapath, input$selected_model, 
-                                xinit, tinterv, input$noise, input$noise_unit, 
+            res = generate_data(values$model_from, input$sbml_file$datapath, input$selected_model,
+                                xinit, tinterv, input$noise, input$noise_unit,
                                 model$numSpecies, params, pick)
 
         }
-        
+
         values$kkk0 = res$kkk0
         return(res)
-        
+
     })
-    
+
     showData = function(input, output, session, t, y_no) {
-        
+
         model = getModelParameters()
-        
-        updateTabsetPanel(session, "inTabset", selected="results")
-        output$generateDataPlot = renderPlot({
-            
+
+        shiny::updateTabsetPanel(session, "inTabset", selected="results")
+        output$generateDataPlot = shiny::renderPlot({
+
             plot_df = data.frame(y_no)
             plot_df$time = t
-            plot_df = melt(plot_df, id.vars='time', variable.name='state')
-            
+            plot_df = reshape2::melt(plot_df, id.vars='time', variable.name='state')
+
             pp = list()
             for (i in 1:ncol(y_no)) {
-                
+
                 species = model$species[i]
                 title = paste('State', species, sep=' ')
-                pp[[i]] = ggplot(data=plot_df, aes(x=time, y=value)) + 
-                    geom_point(data=subset(plot_df, state==species), color="red") + 
-                    ggtitle(title) + 
-                    xlab("Time") +
-                    ylab("Value") +
-                    theme_bw() + theme(text = element_text(size=20)) + 
-                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
-                
+                pp[[i]] = ggplot2::ggplot(data=plot_df, ggplot2::aes(x=time, y=value)) +
+                    ggplot2::geom_point(data=subset(plot_df, state==species), color="red") +
+                    ggplot2::ggtitle(title) +
+                    ggplot2::xlab("Time") +
+                    ggplot2::ylab("Value") +
+                    ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
+                    ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0))
+
             }
-            do.call(grid.arrange, pp)
-            
-        })    
-        
+            do.call(gridExtra::grid.arrange, pp)
+
+        })
+
         shinyjs::enable("inferBtn")
         if (values$data_from == 'generated') {
             output$resultsType = renderText({ "Generated data:" })
-            updateActionButton(session, "inferBtn", label = "Infer on generated data")    
+            shiny::updateActionButton(session, "inferBtn", label = "Infer on generated data")
             shinyjs::show("downloadDataBtn")
         } else if (values$data_from == 'uploaded') {
             output$resultsType = renderText({ "Loaded data:" })
-            updateActionButton(session, "inferBtn", label = "Infer on loaded data")    
+            shiny::updateActionButton(session, "inferBtn", label = "Infer on loaded data")
         }
-        
-        output$downloadDataBtn <- downloadHandler(
+
+        output$downloadDataBtn <- shiny::downloadHandler(
             filename = function() { 'data.csv' },
             content = function(file) {
                 df1 = as.data.frame(t)
@@ -210,11 +195,11 @@ shinyServer(function(input, output, session) {
                 df = cbind(df1, df2)
                 write.csv(df, file, row.names=FALSE)
             }
-        )    
-        
+        )
+
     }
-    
-    observeEvent(input$generateBtn, {
+
+    shiny::observeEvent(input$generateBtn, {
         values$data_from <- 'generated'
         res = getData()
         showData(input, output, session, res$time, res$y_no)
@@ -222,42 +207,42 @@ shinyServer(function(input, output, session) {
         shinyjs::hide('interpPlotInitial')
         shinyjs::hide('interpPlotInferred')
         shinyjs::hide('plot_ode')
-    })    
-    
-    observeEvent(input$csv_file, {
+    })
+
+    shiny::observeEvent(input$csv_file, {
         values$data_from <- 'uploaded'
         res = getData()
         showData(input, output, session, res$time, res$y_no)
     })
-    
-    observeEvent(input$inferBtn, {
-        
+
+    shiny::observeEvent(input$inferBtn, {
+
         SEED = input$seed
         # print(paste('Infer seed is', SEED))
         set.seed(SEED)
-        
+
         shinyjs::disable('inferBtn')
         shinyjs::hide('generateDataPlot')
         shinyjs::show('interpPlotInitial')
         shinyjs::show('interpPlotInferred')
         shinyjs::show('plot_ode')
-        updateTabsetPanel(session, "inTabset", selected="results")        
+        shiny::updateTabsetPanel(session, "inTabset", selected="results")
 
         res = getData()
         kkk = res$kkk
         y_no = res$y_no
         tinterv = res$tinterv
-        
+
         model = getModelParameters()
         nst = model$numSpecies
 
         progress <- shiny::Progress$new()
         on.exit(progress$close())
-        
+
         if (!is.null(res$sbml_data)) {
             attach(res$sbml_data)
         }
-        
+
         if (input$ode_reg == 'on' && input$warping == 'on') {
             method = '3rd+warping'
         } else {
@@ -278,14 +263,14 @@ shinyServer(function(input, output, session) {
         } else if (method == "warping") {
             peod = get_values(input, 'p0_', nst, model$species)
             eps = input$eps
-            infer_res = warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
+            infer_res = warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)
         } else if (method == "3rd+warping") {
             peod = get_values(input, 'p0_', nst, model$species)
             eps = input$eps
-            infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)                
+            infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)
         }
         values$infer_res = infer_res
-        
+
         initial_params = get_values(input, 'param_val', model$numParams, model$params)
         inferred_params = infer_res$ode_par
         names(inferred_params) = names(initial_params)
@@ -299,184 +284,184 @@ shinyServer(function(input, output, session) {
         # rownames(inferred_df) = model$params
         values$initial_df = initial_df
         values$inferred_df = inferred_df
-        
+
         if (!is.null(res$sbml_data)) {
             detach(res$sbml_data)
         }
 
         ### plot the interpolation fit ###
-        output$interpPlotInitial = get_interpolation_plot(values$infer_res, time, solved_initial, model$species) 
-        output$interpPlotInferred = get_interpolation_plot(values$infer_res, time, solved_inferred, model$species) 
-        
-        ### show the tables of initial & inferred parameters ###        
-        output$initialParams = renderTable({
+        output$interpPlotInitial = get_interpolation_plot(values$infer_res, time, solved_initial, model$species)
+        output$interpPlotInferred = get_interpolation_plot(values$infer_res, time, solved_inferred, model$species)
+
+        ### show the tables of initial & inferred parameters ###
+        output$initialParams = shiny::renderTable({
             values$initial_df
         }, rownames=T, digits=6)
-        output$inferredParams = renderTable({
+        output$inferredParams = shiny::renderTable({
             values$inferred_df
         }, rownames=T, digits=6)
-    
+
         # show/enable download and infer buttons
         shinyjs::show("downloadParamsBtn")
         shinyjs::enable("inferBtn")
 
-        # set the download handler for the inferred parameters        
-        output$downloadParamsBtn <- downloadHandler(
+        # set the download handler for the inferred parameters
+        output$downloadParamsBtn <- shiny::downloadHandler(
             filename = function() { 'params.csv' },
             content = function(file) {
                 write.csv(values$inferred_df, file)
             }
-        )    
-        
+        )
+
         ### plot the objective function for diagnostics
         output$diagnosticPlot = get_diagnostic_plot(values$infer_res)
-        
+
         ### plot the warping functions for each state ###
         # if (!is.null(res$warpfun_x[[1]])) {
             output$warpingPlot = get_warping_plot(values$infer_res, model$species)
         # }
-        
+
         ### print diagnostic output
-        output$console = renderPrint({
+        output$console = shiny::renderPrint({
             values$infer_res$output
         })
-        
+
     })
-    
+
     get_interpolation_plot = function(res, time, solved, species) {
-        
-        return(renderPlot({
-            
+
+        return(shiny::renderPlot({
+
             solved_yode = solved$y_ode
             solved_t = solved$t
             pp = list()
             for (i in 1:res$nst) {
-                
+
                 intp_x = res$intp_x[[i]]
                 intp_y = res$intp_y[[i]]
                 data_x = res$data_x[[i]]
                 data_y = res$data_y[[i]]
                 solved_y = solved_yode[i, ]
                 solved_x = solved_t
-                
+
                 time = intp_x
                 plot_df1 = data.frame(time)
                 plot_df1$interpolated = intp_y
-                plot_df1 = melt(plot_df1, id.vars='time', variable.name='type')
-                
+                plot_df1 = reshape2::melt(plot_df1, id.vars='time', variable.name='type')
+
                 time = data_x
                 plot_df2 = data.frame(time)
                 plot_df2$observed = data_y
-                plot_df2 = melt(plot_df2, id.vars='time', variable.name='type')
-                
+                plot_df2 = reshape2::melt(plot_df2, id.vars='time', variable.name='type')
+
                 time = solved_x
                 plot_df3 = data.frame(time)
                 plot_df3$solved = solved_y
-                plot_df3 = melt(plot_df3, id.vars='time', variable.name='type')
-                
+                plot_df3 = reshape2::melt(plot_df3, id.vars='time', variable.name='type')
+
                 plot_df = rbind(plot_df1, plot_df2, plot_df3)
                 temp2 = subset(plot_df, type=='observed')
                 temp1 = subset(plot_df, type=='interpolated')
                 temp3 = subset(plot_df, type=='solved')
-                
+
                 title = paste('State', species[i], sep=' ')
-                g = ggplot() + 
-                    geom_point(data=temp2, aes(x=time, y=value, colour='c1')) +
-                    geom_line(data=temp1, aes(x=time, y=value, colour='c2'), size=1) +
-                    geom_line(data=temp3, aes(x=time, y=value, colour='c3'), size=1, linetype="dashed") + 
-                    ggtitle(title) +
-                    theme_bw() + theme(text = element_text(size=20)) + 
-                    scale_colour_manual(name="Legend", values=c(c1="red", c2="blue", c3="grey"), 
+                g = ggplot2::ggplot() +
+                    ggplot2::geom_point(data=temp2, ggplot2::aes(x=time, y=value, colour='c1')) +
+                    ggplot2::geom_line(data=temp1, ggplot2::aes(x=time, y=value, colour='c2'), size=1) +
+                    ggplot2::geom_line(data=temp3, ggplot2::aes(x=time, y=value, colour='c3'), size=1, linetype="dashed") +
+                    ggplot2::ggtitle(title) +
+                    ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
+                    ggplot2::scale_colour_manual(name="Legend", values=c(c1="red", c2="blue", c3="grey"),
                                         labels=c(c1="Observed", c2="Interpolated", c3="Solved")) +
-                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
-                
+                    ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0))
+
                 pp[[i]] = g
-                
+
             }
-            do.call(grid.arrange, pp)
-            
-        }))      
-        
+            do.call(gridExtra::grid.arrange, pp)
+
+        }))
+
     }
-    
+
     get_diagnostic_plot = function(res) {
-        
+
         return(renderPlot({
-            
+
             objectives = res$objectives
-            
+
             # plot the objective function for gradient matching
             df = as.data.frame(objectives)
             iterations = seq_along(objectives)-1
-            g = ggplot(data=df, aes(y=objectives, x=iterations)) +
-                geom_line(size=1, colour='blue') +
-                geom_point() +
-                ggtitle('Optimisation Results') +
-                xlab("Iteration") +
-                ylab("Objective (f)") +
-                theme_bw() + theme(text = element_text(size=20)) + 
-                expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0))
+            g = ggplot2::ggplot(data=df, ggplot2::aes(y=objectives, x=iterations)) +
+                ggplot2::geom_line(size=1, colour='blue') +
+                ggplot2::geom_point() +
+                ggplot2::ggtitle('Optimisation Results') +
+                ggplot2::xlab("Iteration") +
+                ggplot2::ylab("Objective (f)") +
+                ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
+                ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0))
             return(g)
-            
+
         }))
-        
+
     }
-    
+
     get_warping_plot = function(res, species) {
-        
+
         return(renderPlot({
-            
+
             pp = list()
             for (i in 1:res$nst) {
-                
+
                 warpfun_x = res$warpfun_x[[i]]
                 warpfun_y = res$warpfun_y[[i]]
                 warpfun_pred = res$warpfun_pred[[i]]
-                
+
                 title = 'Original'
                 warp_df = as.data.frame(warpfun_x)
                 warp_df$intp = warpfun_pred
-                g1 = ggplot() +
-                    geom_line(data=warp_df, aes(x=warpfun_x, y=intp), size=1) +
-                    ggtitle(title) + 
-                    xlab("Original time") +
-                    ylab("Value") +
-                    theme_bw() + theme(text = element_text(size=20)) + 
-                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
-                    theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
-                
+                g1 = ggplot2::ggplot() +
+                    ggplot2::geom_line(data=warp_df, ggplot2::aes(x=warpfun_x, y=intp), size=1) +
+                    ggplot2::ggtitle(title) +
+                    ggplot2::xlab("Original time") +
+                    ggplot2::ylab("Value") +
+                    ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
+                    ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
+                    ggplot2::theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+
                 title = paste('State', species[i], ' - Warp func.', sep=' ')
                 warp_df = as.data.frame(warpfun_x)
                 warp_df$warpfun_y = warpfun_y
-                g2 = ggplot() +
-                    geom_line(data=warp_df, aes(x=warpfun_x, y=warpfun_y), size=1) +
-                    ggtitle(title) + 
-                    xlab("Original time") +
-                    ylab("Warped time") +
-                    theme_bw() + theme(text = element_text(size=20)) + 
-                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
-                    theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
-                
+                g2 = ggplot2::ggplot() +
+                    ggplot2::geom_line(data=warp_df, ggplot2::aes(x=warpfun_x, y=warpfun_y), size=1) +
+                    ggplot2::ggtitle(title) +
+                    ggplot2::xlab("Original time") +
+                    ggplot2::ylab("Warped time") +
+                    ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
+                    ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
+                    ggplot2::theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+
                 title = 'Warped'
                 warp_df = as.data.frame(warpfun_y)
                 warp_df$intp = warpfun_pred
-                g3 = ggplot() +
-                    geom_line(data=warp_df, aes(x=warpfun_y, y=intp), size=1) +
-                    ggtitle(title) + 
-                    xlab("Warped time") +
-                    ylab("Value") +
-                    theme_bw() + theme(text = element_text(size=20)) + 
-                    expand_limits(x = 0) + scale_x_continuous(expand = c(0, 0)) + 
-                    theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
-                
-                pp[[i]] = grid.arrange(g1, g2, g3, ncol=3)
-                
+                g3 = ggplot2::ggplot() +
+                    ggplot2::geom_line(data=warp_df, ggplot2::aes(x=warpfun_y, y=intp), size=1) +
+                    ggplot2::ggtitle(title) +
+                    ggplot2::xlab("Warped time") +
+                    ggplot2::ylab("Value") +
+                    ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size=20)) +
+                    ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
+                    ggplot2::theme(plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+
+                pp[[i]] = gridExtra::grid.arrange(g1, g2, g3, ncol=3)
+
             }
-            
-            do.call(grid.arrange, pp)
-            
-        }))        
-        
+
+            do.call(gridExtra::grid.arrange, pp)
+
+        }))
+
     }
-    
+
 })
