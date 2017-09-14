@@ -207,6 +207,13 @@ shiny::shinyServer(function(input, output, session) {
         shinyjs::hide('interpPlotInitial')
         shinyjs::hide('interpPlotInferred')
         shinyjs::hide('plot_ode')
+        shinyjs::hide('downloadParamsBtn')
+        shinyjs::hide('initialParams')
+        shinyjs::hide('inferredParams')
+        shinyjs::hide('diagnosticPlot')
+        shinyjs::hide('warpingPlot')
+        shinyjs::hide('console')
+        
     })
 
     shiny::observeEvent(input$csv_file, {
@@ -226,6 +233,12 @@ shiny::shinyServer(function(input, output, session) {
         shinyjs::show('interpPlotInitial')
         shinyjs::show('interpPlotInferred')
         shinyjs::show('plot_ode')
+        shinyjs::show('downloadParamsBtn')
+        shinyjs::show('initialParams')
+        shinyjs::show('inferredParams')
+        shinyjs::show('diagnosticPlot')
+        shinyjs::show('warpingPlot')
+        shinyjs::show('console')
         shiny::updateTabsetPanel(session, "inTabset", selected="results")
 
         res = getData()

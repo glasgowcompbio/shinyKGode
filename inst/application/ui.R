@@ -121,14 +121,20 @@ shiny::shinyUI(fluidPage(
                shiny::tabPanel(title="Diagnostics",
                         value="diagnostics",
                         shiny::h5("Objectives"),
-                        shiny::plotOutput('diagnosticPlot'),
-                        shiny::conditionalPanel(
-                            condition = "input.warping == 'on'",
-                            shiny::h5("Warping"),
-                            shiny::plotOutput('warpingPlot')
+                        shinyjs::hidden(
+                            shiny::plotOutput('diagnosticPlot')
+                        ),
+                        shinyjs::hidden(
+                            shiny::conditionalPanel(
+                                condition = "input.warping == 'on'",
+                                shiny::h5("Warping"),
+                                shiny::plotOutput('warpingPlot')
+                            )
                         ),
                         shiny::h5("Console log"),
-                        shiny::verbatimTextOutput("console")
+                        shinyjs::hidden(
+                            shiny::verbatimTextOutput("console")
+                        )
                ),
                shiny::tabPanel(title="Advanced Parameters",
                         value="advanced",
