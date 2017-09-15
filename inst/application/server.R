@@ -194,13 +194,7 @@ shiny::shinyServer(function(input, output, session) {
                 write.csv(df, file, row.names=FALSE)
             }
         )
-
-    }
-
-    shiny::observeEvent(input$generateBtn, {
-        values$data_from <- 'generated'
-        res = getData()
-        showData(input, output, session, res$time, res$y_no)
+        
         shinyjs::show('generateDataPlot')
         shinyjs::hide('interpPlotInitial')
         shinyjs::hide('interpPlotInferred')
@@ -211,7 +205,13 @@ shiny::shinyServer(function(input, output, session) {
         shinyjs::hide('diagnosticPlot')
         shinyjs::hide('warpingPlot')
         shinyjs::hide('console')
-        
+
+    }
+
+    shiny::observeEvent(input$generateBtn, {
+        values$data_from <- 'generated'
+        res = getData()
+        showData(input, output, session, res$time, res$y_no)
     })
 
     shiny::observeEvent(input$csv_file, {
