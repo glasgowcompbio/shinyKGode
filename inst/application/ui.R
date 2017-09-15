@@ -33,9 +33,9 @@ shiny::shinyUI(fluidPage(
                shiny::h4("Generate Data"),
                shiny::helpText(("Specify the start time, end time and every n-th time points to pick.")),
                shiny::fluidRow(
-                   shiny::column(4, numericInput("timePointsMin", "Start", value=0, min=0, max=NA, step=1)),
-                   shiny::column(4, numericInput("timePointsMax", "End", value=10, min=0, max=NA, step=1)),
-                   shiny::column(4, numericInput("timePointsPick", "Pick", value=1, min=1, max=NA, step=1))
+                   shiny::column(4, numericInput("time_points_min", "Start", value=0, min=0, max=NA, step=1)),
+                   shiny::column(4, numericInput("time_points_max", "End", value=10, min=0, max=NA, step=1)),
+                   shiny::column(4, numericInput("time_points_pick", "Pick", value=1, min=1, max=NA, step=1))
                ),
                shiny::fluidRow(
                    shiny::column(8, numericInput("noise", "Noise", value=0.1, min=0, max=NA, step=0.1)),
@@ -86,7 +86,6 @@ shiny::shinyUI(fluidPage(
                shiny::tabPanel(title="Results",
                         value="results",
                         shiny::h5("Plots"),
-                        # verbatimTextOutput('resultsType'),
                         shiny::plotOutput('generateDataPlot'),
                         shiny::conditionalPanel(
                             condition = "input.plot_ode == 'initial'",

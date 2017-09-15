@@ -28,13 +28,13 @@ LV_grlNODE = function(par,grad_ode,y_p,z_p) {
 
 LV_initial_values = function() {
 
-    numSpecies = 2
+    num_species = 2
     species = c("X1", "X2")
-    speciesInitial = c(0.5, 1.0)
+    species_initial = c(0.5, 1.0)
 
-    numParams = 4
+    num_params = 4
     params = c("alpha", "beta", "gamma", "delta")
-    paramsVals = c(1, 1, 4, 1)
+    params_vals = c(1, 1, 4, 1)
 
     tinterv = c(0, 6)
     pick = 2
@@ -43,8 +43,8 @@ LV_initial_values = function() {
     peod = c(6, 5.3) #8#9.7     ## the guessing period
     eps = 1          ## the standard deviation of period
 
-    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial,
-                numParams=numParams, params=params, paramsVals=paramsVals,
+    return(list(num_species=num_species, species=species, species_initial=species_initial,
+                num_params=num_params, params=params, params_vals=params_vals,
                 tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
 
@@ -68,13 +68,13 @@ FN_grlNODE= function(par,grad_ode,y_p,z_p) {
 
 FN_initial_values = function() {
 
-    numSpecies = 2
+    num_species = 2
     species = c("X1", "X2")
-    speciesInitial = c(-1,-1)
+    species_initial = c(-1,-1)
 
-    numParams = 3
+    num_params = 3
     params = c("a", "b", "c")
-    paramsVals = c(0.2, 0.2, 3)
+    params_vals = c(0.2, 0.2, 3)
 
     tinterv = c(0, 10)
     pick = 2
@@ -83,8 +83,8 @@ FN_initial_values = function() {
     peod = c(8, 8.5) #8#9.7     ## the guessing period
     eps = 1          ## the standard deviation of period
 
-    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial,
-                numParams=numParams, params=params, paramsVals=paramsVals,
+    return(list(num_species=num_species, species=species, species_initial=species_initial,
+                num_params=num_params, params=params, params_vals=params_vals,
                 tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
 
@@ -119,13 +119,13 @@ BP_grlNODE= function(par_ode,grad_ode,y_p,z_p) {
 
 BP_initial_values = function() {
 
-    numSpecies = 5
+    num_species = 5
     species = c("X1", "X2", "X3", "X4", "X5")
-    speciesInitial = c(1,0,1,0,0)
+    species_initial = c(1,0,1,0,0)
 
-    numParams = 6
+    num_params = 6
     params = c("k1", "k2", "k3", "k4", "k5", "k6")
-    paramsVals = c(0.07, 0.6, 0.05, 0.3, 0.017, 0.3)
+    params_vals = c(0.07, 0.6, 0.05, 0.3, 0.017, 0.3)
 
     tinterv = c(0, 100)
     pick = NA
@@ -134,8 +134,8 @@ BP_initial_values = function() {
     peod = c(200, 200, 200, 200, 200)   ## the guessing period for each state  user defined
     eps= 20          ## the standard deviation of period  user defined
 
-    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial,
-                numParams=numParams, params=params, paramsVals=paramsVals,
+    return(list(num_species=num_species, species=species, species_initial=species_initial,
+                num_params=num_params, params=params, params_vals=params_vals,
                 tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
 
@@ -161,23 +161,23 @@ get_initial_values_sbml = function(inFile) {
     print(inFile)
     res = load_sbml(inFile$datapath)
 
-    numSpecies = res$mi$nSpecies
+    num_species = res$mi$nSpecies
     species = res$mi$sIDs
-    speciesInitial = unname(res$mi$y0)
+    species_initial = unname(res$mi$y0)
 
-    numParams = length(res$params)
+    num_params = length(res$params)
     params = names(res$params)
-    paramsVals = unname(res$params)
+    params_vals = unname(res$params)
 
     # just some randomly selected default values
     tinterv = c(0, 10)
     pick = 1
     noise_var = 0.1
-    peod = rep(1, numParams)
+    peod = rep(1, num_params)
     eps = 1
 
-    return(list(numSpecies=numSpecies, species=species, speciesInitial=speciesInitial,
-                numParams=numParams, params=params, paramsVals=paramsVals,
+    return(list(num_species=num_species, species=species, species_initial=species_initial,
+                num_params=num_params, params=params, params_vals=params_vals,
                 tinterv=tinterv, pick=pick, noise_var=noise_var,
                 peod=peod, eps=eps))
 
@@ -199,14 +199,14 @@ add_noise <- function(x, snr_db) {
     return(res)
 }
 
-generate_data_selected_model = function(selected_model, xinit, tinterv, numSpecies,
-                                           paramsVals, noise, noise_unit, pick) {
+generate_data_selected_model = function(selected_model, xinit, tinterv, num_species,
+                                           params_vals, noise, noise_unit, pick) {
 
-    npar = length(paramsVals)
+    npar = length(params_vals)
     if (selected_model == "lv") {
 
         kkk0 = gradmatch::ode$new(pick, fun=LV_fun, grfun=LV_grlNODE)
-        kkk0$solve_ode(paramsVals, xinit, tinterv)
+        kkk0$solve_ode(params_vals, xinit, tinterv)
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
@@ -215,7 +215,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
     } else if (selected_model == "fhg") {
 
         kkk0 = gradmatch::ode$new(pick,fun=FN_fun,grfun=FN_grlNODE)
-        kkk0$solve_ode(paramsVals, xinit, tinterv)
+        kkk0$solve_ode(params_vals, xinit, tinterv)
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
@@ -224,7 +224,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
     } else if (selected_model == 'bp') {
 
         kkk0 = gradmatch::ode$new(1, fun=BP_fun, grfun=BP_grlNODE)
-        kkk0$solve_ode(paramsVals, xinit, tinterv)
+        kkk0$solve_ode(params_vals, xinit, tinterv)
         start = 6
         select = 2
         ppick = c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
@@ -238,7 +238,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, numSpeci
 
     if (noise_unit == 'var') {
         n_o = max( dim( kkk$y_ode) )
-        y_no =  t(kkk$y_ode) + mvtnorm::rmvnorm(n_o, rep(0, numSpecies), noise*diag(numSpecies))
+        y_no =  t(kkk$y_ode) + mvtnorm::rmvnorm(n_o, rep(0, num_species), noise*diag(num_species))
     } else if (noise_unit == 'db') {
         y_no =  add_noise(kkk$y_ode, noise)
     }
@@ -299,13 +299,13 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit
 }
 
 generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv,
-                          noise, noise_unit, numSpecies, params, pick) {
+                          noise, noise_unit, num_species, params, pick) {
 
     if (model_from == 'uploaded') { # generate data using the model from an SBML file
         res = generate_data_from_sbml(sbml_file, xinit, tinterv, params,
                                       noise, noise_unit, pick)
     } else if (model_from == 'selected') { # generate data using predefined models
-        res = generate_data_selected_model(selected_model, xinit, tinterv, numSpecies, params,
+        res = generate_data_selected_model(selected_model, xinit, tinterv, num_species, params,
                                            noise, noise_unit, pick)
     }
     return(res)
