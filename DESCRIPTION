@@ -24,7 +24,7 @@ Imports:
     gradmatch
 Depends:
     pracma (>= 2.0.7),
-    psplin (>= 1.0.18)
+    pspline (>= 1.0.18)
 Remotes:
     joewandy/SBMLR,
     joewandy/gradmatch
