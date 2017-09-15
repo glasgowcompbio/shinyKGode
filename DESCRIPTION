@@ -1,27 +1,30 @@
 Package: shinygradmatch
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: A Shiny User Interface of Time Warping for Improved Gradient Matching
+Version: 1.0.0
+Author: Joe Wandy
+Maintainer: Joe Wandy <joe.wandy@glasgow.ac.uk>
+Description: Interactive shiny application to perform inference of non-linear 
+    differential equations via gradient matching. Three (Lotka-Volterra, 
+    Fitz hugh Nagumo, and Biopathway) pre-defined models are provided,
+    and the user can also load her own model (in the Systems Biology Markup 
+    Language format) into the application.
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports:
-    tools,
-    shiny,
-    shinyjs,
-    ggplot2,
-    reshape2,
-    gridExtra,
-    mvtnorm,
+    tools (>= 3.4.1),
+    shiny (>= 1.0.5),
+    shinyjs (>= 0.9.1),
+    ggplot2 (>= 2.2.1),
+    reshape2 (>= 1.4.2),
+    gridExtra (>= 2.3),
+    mvtnorm (>= 1.0.6),
     SBMLR,
     gradmatch
 Depends:
-    pracma,
-    pspline
+    pracma (>= 2.0.7),
+    psplin (>= 1.0.18)
 Remotes:
     joewandy/SBMLR,
     joewandy/gradmatch
