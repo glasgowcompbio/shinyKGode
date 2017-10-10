@@ -1,14 +1,14 @@
-#' Start ShinyGradmatch
-#' @title This function will start ShinyGradmatch
+#' Start ShinyKGode
+#' @title This function will start ShinyKGode
 #' @return Nothing
 #' @description An interactive Shiny application for running gradient matching to approximate ODEs.
-#' @details This starts the ShinyGradmatch application on the users local computer. 
-#' @keywords ShinyGradmatch
+#' @details This starts the ShinyKGode application on the users local computer.
+#' @keywords ShinyKGode
 #' @examples
 #' \dontrun{
-#' startShinyGradmatch()
+#' startShinyKGode()
 #' }
 #' @export
-startShinyGradmatch <- function() {
-  shiny::runApp(appDir = system.file("application", package='shinygradmatch'))
+startShinyKGode <- function() {
+  shiny::runApp(appDir = system.file("application", package='shinyKGode'))
 }

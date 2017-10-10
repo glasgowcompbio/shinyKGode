@@ -1,13 +1,13 @@
-Package: shinygradmatch
+Package: shinyKGode
 Type: Package
 Title: A Shiny User Interface of Time Warping for Improved Gradient Matching
 Version: 1.0.0
 Author: Joe Wandy
 Maintainer: Joe Wandy <joe.wandy@glasgow.ac.uk>
-Description: Interactive shiny application to perform inference of non-linear 
-    differential equations via gradient matching. Three (Lotka-Volterra, 
+Description: Interactive shiny application to perform inference of non-linear
+    differential equations via gradient matching. Three (Lotka-Volterra,
     Fitz hugh Nagumo, and Biopathway) pre-defined models are provided,
-    and the user can also load her own model (in the Systems Biology Markup 
+    and the user can also load her own model (in the Systems Biology Markup
     Language format) into the application.
 License: GPL-3
 Encoding: UTF-8
@@ -21,11 +21,11 @@ Imports:
     gridExtra (>= 2.3),
     mvtnorm (>= 1.0.6),
     SBMLR,
-    gradmatch
+    KGode
 Depends:
     pracma (>= 2.0.7),
     pspline (>= 1.0.18)
 Remotes:
     joewandy/SBMLR,
-    joewandy/gradmatch
+    mu2013/KGode
 RoxygenNote: 6.0.1

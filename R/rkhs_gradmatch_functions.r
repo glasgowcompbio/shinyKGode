@@ -1,9 +1,3 @@
-# library(devtools)
-# install_github("joewandy/SBMLR")
-# install_github('joewandy/gradmatch')
-# library(SBMLR)
-# library(gradmatch)
-
 ### define ode
 LV_fun = function(t,x,par_ode){
     alpha=par_ode[1]
@@ -205,25 +199,25 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
     npar = length(params_vals)
     if (selected_model == "lv") {
 
-        kkk0 = gradmatch::ode$new(pick, fun=LV_fun, grfun=LV_grlNODE)
+        kkk0 = KGode::ode$new(pick, fun=LV_fun, grfun=LV_grlNODE)
         kkk0$solve_ode(params_vals, xinit, tinterv)
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
-        kkk = gradmatch::ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
+        kkk = KGode::ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     } else if (selected_model == "fhg") {
 
-        kkk0 = gradmatch::ode$new(pick,fun=FN_fun,grfun=FN_grlNODE)
+        kkk0 = KGode::ode$new(pick,fun=FN_fun,grfun=FN_grlNODE)
         kkk0$solve_ode(params_vals, xinit, tinterv)
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode
         init_t = kkk0$t
-        kkk = gradmatch::ode$new(1, fun=FN_fun, grfun=FN_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
+        kkk = KGode::ode$new(1, fun=FN_fun, grfun=FN_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     } else if (selected_model == 'bp') {
 
-        kkk0 = gradmatch::ode$new(1, fun=BP_fun, grfun=BP_grlNODE)
+        kkk0 = KGode::ode$new(1, fun=BP_fun, grfun=BP_grlNODE)
         kkk0$solve_ode(params_vals, xinit, tinterv)
         start = 6
         select = 2
@@ -232,7 +226,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
         init_par = rep(c(0.1), npar)
         init_yode = kkk0$y_ode[,ppick]
         init_t = kkk0$t[ppick]
-        kkk = gradmatch::ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
+        kkk = KGode::ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     }
 
@@ -276,14 +270,14 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit
     appendEnv(work_env, param_env) # appends global parameters into work_env
     work_env$initial_names = initial_names
 
-    kkk0 = gradmatch::ode$new(pick, fun=ode_fun)
+    kkk0 = KGode::ode$new(pick, fun=ode_fun)
     xinit = as.matrix(mi$S0)
     kkk0$solve_ode(par_ode=params, xinit, tinterv)
 
     init_par = params
     init_yode = kkk0$y_ode
     init_t = kkk0$t
-    kkk = gradmatch::ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
+    kkk = KGode::ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
 
     if (noise_unit == 'var') {
         n_o = max( dim( kkk$y_ode) )
@@ -372,7 +366,7 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
     }
 
     tinterv = c(min(init_time), max(init_time))
-    kkk = gradmatch::ode$new(1, fun=ode_fun, t=init_time, ode_par=init_par, y_ode=t(y_no))
+    kkk = KGode::ode$new(1, fun=ode_fun, t=init_time, ode_par=init_par, y_ode=t(y_no))
     res = list(time=init_time, y_no=y_no, kkk=kkk, sbml_data=NULL, tinterv=tinterv, kkk0=kkk)
     return(res)
 
@@ -470,7 +464,7 @@ parse_objectives <- function(output) {
 gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
 
     update_status(progress, 'Gradient matching', 'start', 0)
-    output1 = capture.output(rkgres <- gradmatch::rkg(kkk, y_no, ktype))
+    output1 = capture.output(rkgres <- KGode::rkg(kkk, y_no, ktype))
     update_status(progress, 'Completed', 'inc', 1)
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
     ode_par = kkk$ode_par
@@ -499,17 +493,17 @@ gradient_match <- function(kkk, tinterv, y_no, ktype, progress) {
 gradient_match_third_step <- function(kkk, tinterv, y_no, ktype, progress) {
 
     update_status(progress, 'Gradient matching', 'start', 0)
-    output1 = capture.output(rkgres <- gradmatch::rkg(kkk, y_no, ktype))
+    output1 = capture.output(rkgres <- KGode::rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
     update_status(progress, 'Cross-validating', 'inc', 0.3)
     crtype='i'  ## two methods fro third step  'i' fast method means iterative and '3' for slow method means 3rd step
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
-    lamil1 = gradmatch::crossv(lam,kkk,bbb,crtype,y_no)
+    lamil1 = KGode::crossv(lam,kkk,bbb,crtype,y_no)
     lambdai1=lamil1[[1]]
 
     update_status(progress, 'Third-step', 'inc', 0.6)
-    output2 = capture.output(res <- gradmatch::third(lambdai1,kkk,bbb,crtype))
+    output2 = capture.output(res <- KGode::third(lambdai1,kkk,bbb,crtype))
     update_status(progress, 'Completed', 'inc', 1)
     ode_par = res$oppar
 
@@ -537,15 +531,15 @@ gradient_match_third_step <- function(kkk, tinterv, y_no, ktype, progress) {
 warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
 
     update_status(progress, 'Gradient matching', 'start', 0)
-    output1 = capture.output(rkgres <- gradmatch::rkg(kkk, y_no, ktype))
+    output1 = capture.output(rkgres <- KGode::rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
     update_status(progress, 'Initialise warping', 'inc', 0.25)
-    output2 = capture.output(fixlens <- gradmatch::warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
+    output2 = capture.output(fixlens <- KGode::warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
 
     update_status(progress, 'Warping', 'inc', 0.5)
-    kkkrkg = kkk$clone()    
-    output3 = capture.output(www <- gradmatch::warpfun(kkkrkg, bbb, peod, eps, fixlens, y_no, kkkrkg$t))
+    kkkrkg = kkk$clone()
+    output3 = capture.output(www <- KGode::warpfun(kkkrkg, bbb, peod, eps, fixlens, y_no, kkkrkg$t))
     update_status(progress, 'Completed', 'inc', 1)
 
     dtilda= www$dtilda
@@ -589,15 +583,15 @@ warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
 third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
 
     update_status(progress, 'Gradient matching', 'start', 0)
-    output1 = capture.output(rkgres <- gradmatch::rkg(kkk, y_no, ktype))
+    output1 = capture.output(rkgres <- KGode::rkg(kkk, y_no, ktype))
     bbb = rkgres$bbb ## bbb is a rkhs object which contain all information about interpolation and kernel parameters.
 
     update_status(progress, 'Initialise warping', 'inc', 0.25)
-    output2 = capture.output(fixlens <- gradmatch::warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
+    output2 = capture.output(fixlens <- KGode::warpInitLen(peod, eps, rkgres)) ## find the start value for the warping basis function.
 
     update_status(progress, 'Warping', 'inc', 0.50)
     kkkrkg = kkk$clone()
-    output3 = capture.output(www <- gradmatch::warpfun(kkkrkg, bbb, peod, eps, fixlens, y_no,kkk$t))
+    output3 = capture.output(www <- KGode::warpfun(kkkrkg, bbb, peod, eps, fixlens, y_no,kkk$t))
 
     dtilda= www$dtilda
     bbbw = www$bbbw
@@ -612,11 +606,11 @@ third_step_warping <- function(kkk, tinterv, y_no, peod, eps, ktype, progress) {
     lam=c(1e-4,1e-5)  ## we need to do cross validation for find the weighter parameter
 
     update_status(progress, 'Cross-validating', 'inc', 0.75)
-    output4 = capture.output(lamwil <- gradmatch::crossv(lam,wkkk,bbbw,crtype,y_no,woption,resmtest,dtilda))
+    output4 = capture.output(lamwil <- KGode::crossv(lam,wkkk,bbbw,crtype,y_no,woption,resmtest,dtilda))
 
     update_status(progress, 'Third-step', 'inc', 0.90)
     lambdawi=lamwil[[1]]
-    output5 = capture.output(res <- gradmatch::third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
+    output5 = capture.output(res <- KGode::third(lambdawi,wkkk,bbbw,crtype,woption,dtilda))  ## add third step after warping
     progress$inc(1, detail = "Completed")
     ode_par = res$oppar
 
