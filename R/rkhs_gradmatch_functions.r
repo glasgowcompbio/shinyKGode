@@ -24,18 +24,18 @@ LV_initial_values = function() {
 
     num_species = 2
     species = c("X1", "X2")
-    species_initial = c(0.5, 1.0)
+    species_initial = c(1.0, 2.0)
 
     num_params = 4
     params = c("alpha", "beta", "gamma", "delta")
-    params_vals = c(1, 1, 4, 1)
+    params_vals = c(0.2, 0.35, 0.7, 0.4)
 
-    tinterv = c(0, 6)
+    tinterv = c(0, 30)
     pick = 2
-    noise_var = 0.1
+    noise_var = 0.000625
 
-    peod = c(6, 5.3) #8#9.7     ## the guessing period
-    eps = 1          ## the standard deviation of period
+    peod = c(17, 17) #8#9.7     ## the guessing period
+    eps = 2          ## the standard deviation of period
 
     return(list(num_species=num_species, species=species, species_initial=species_initial,
                 num_params=num_params, params=params, params_vals=params_vals,
@@ -201,7 +201,8 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
 
         kkk0 = KGode::ode$new(pick, fun=LV_fun, grfun=LV_grlNODE)
         kkk0$solve_ode(params_vals, xinit, tinterv)
-        init_par = rep(c(0.1), npar)
+        # init_par = rep(c(0.1), npar)
+        init_par = params_vals
         init_yode = kkk0$y_ode
         init_t = kkk0$t
         kkk = KGode::ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -210,7 +211,8 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
 
         kkk0 = KGode::ode$new(pick,fun=FN_fun,grfun=FN_grlNODE)
         kkk0$solve_ode(params_vals, xinit, tinterv)
-        init_par = rep(c(0.1), npar)
+        # init_par = rep(c(0.1), npar)
+        init_par = params_vals
         init_yode = kkk0$y_ode
         init_t = kkk0$t
         kkk = KGode::ode$new(1, fun=FN_fun, grfun=FN_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -223,7 +225,8 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
         select = 2
         ppick = c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
 
-        init_par = rep(c(0.1), npar)
+        # init_par = rep(c(0.1), npar)
+        init_par = params_vals
         init_yode = kkk0$y_ode[,ppick]
         init_t = kkk0$t[ppick]
         kkk = KGode::ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -348,7 +351,8 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
 
     init_time = x[, 1]
     y_no = x[, 2:ncol(x)]
-    init_par = rep(c(0.1), length(params))
+    # init_par = rep(c(0.1), length(params))
+    init_par = params
 
     if (model_from == 'uploaded') { # extract from the SBML file
         res = get_ode_fun(sbml_file, params)

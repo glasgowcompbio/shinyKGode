@@ -31,7 +31,8 @@ shiny::shinyUI(fluidPage(
                    )
                ),
                shiny::h4("Generate Data"),
-               shiny::helpText(("Specify the start time, end time and every n-th time points to pick.")),
+               shiny::helpText(("Data will be generated using the parameter values and initial conditions on the right-hand panel. 
+                                Additionally, specify the start time, end time and every n-th time points to pick.")),
                shiny::fluidRow(
                    shiny::column(4, numericInput("time_points_min", "Start", value=0, min=0, max=NA, step=1)),
                    shiny::column(4, numericInput("time_points_max", "End", value=10, min=0, max=NA, step=1)),
@@ -56,7 +57,7 @@ shiny::shinyUI(fluidPage(
                         shiny::column(3, offset = 1,
                                shiny::h5("ODE Parameters"),
                                shiny::verbatimTextOutput("odeParameters", placeholder = TRUE),
-                               shiny::helpText(("Specify the starting values of parameters.")),
+                               shiny::helpText(("Specify the parameter values to generate data/perform optimisation.")),
                                shiny::tags$div(id = 'placeholderParams'),
                                shiny::tags$br()
                         ),
@@ -123,12 +124,10 @@ shiny::shinyUI(fluidPage(
                         shinyjs::hidden(
                             shiny::plotOutput('diagnosticPlot')
                         ),
-                        shinyjs::hidden(
-                            shiny::conditionalPanel(
-                                condition = "input.warping == 'on'",
-                                shiny::h5("Warping"),
-                                shiny::plotOutput('warpingPlot')
-                            )
+                        shiny::conditionalPanel(
+                            condition = "input.warping == 'on'",
+                            shiny::h5("Warping"),
+                            shiny::plotOutput('warpingPlot')
                         ),
                         shiny::h5("Console log"),
                         shinyjs::hidden(
