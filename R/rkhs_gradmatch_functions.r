@@ -194,7 +194,7 @@ add_noise <- function(x, snr_db) {
 }
 
 generate_data_selected_model = function(selected_model, xinit, tinterv, num_species,
-                                           params_vals, noise, noise_unit, pick) {
+                                           params_vals, opt_params, noise, noise_unit, pick) {
 
     npar = length(params_vals)
     if (selected_model == "lv") {
@@ -202,7 +202,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
         kkk0 = KGode::ode$new(pick, fun=LV_fun, grfun=LV_grlNODE)
         kkk0$solve_ode(params_vals, xinit, tinterv)
         # init_par = rep(c(0.1), npar)
-        init_par = params_vals
+        init_par = opt_params
         init_yode = kkk0$y_ode
         init_t = kkk0$t
         kkk = KGode::ode$new(1, fun=LV_fun, grfun=LV_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -212,7 +212,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
         kkk0 = KGode::ode$new(pick,fun=FN_fun,grfun=FN_grlNODE)
         kkk0$solve_ode(params_vals, xinit, tinterv)
         # init_par = rep(c(0.1), npar)
-        init_par = params_vals
+        init_par = opt_params
         init_yode = kkk0$y_ode
         init_t = kkk0$t
         kkk = KGode::ode$new(1, fun=FN_fun, grfun=FN_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -226,7 +226,7 @@ generate_data_selected_model = function(selected_model, xinit, tinterv, num_spec
         ppick = c( 1:(start-1),seq(start,(length(kkk0$t)-1),select),length(kkk0$t))
 
         # init_par = rep(c(0.1), npar)
-        init_par = params_vals
+        init_par = opt_params
         init_yode = kkk0$y_ode[,ppick]
         init_t = kkk0$t[ppick]
         kkk = KGode::ode$new(1, fun=BP_fun, grfun=BP_grlNODE, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -260,7 +260,7 @@ appendEnv = function(e1, e2) {
     }
 }
 
-generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit, pick) {
+generate_data_from_sbml <- function(f, xinit, tinterv, params, opt_params, noise, noise_unit, pick) {
 
     res = get_ode_fun(f, params)
     model = res$model
@@ -277,7 +277,7 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit
     xinit = as.matrix(mi$S0)
     kkk0$solve_ode(par_ode=params, xinit, tinterv)
 
-    init_par = params
+    init_par = opt_params
     init_yode = kkk0$y_ode
     init_t = kkk0$t
     kkk = KGode::ode$new(1, fun=ode_fun, t=init_t, ode_par=init_par, y_ode=init_yode)
@@ -296,13 +296,14 @@ generate_data_from_sbml <- function(f, xinit, tinterv, params, noise, noise_unit
 }
 
 generate_data <- function(model_from, sbml_file, selected_model, xinit, tinterv,
-                          noise, noise_unit, num_species, params, pick) {
+                          noise, noise_unit, num_species, params, opt_params, pick) {
 
     if (model_from == 'uploaded') { # generate data using the model from an SBML file
-        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params,
+        res = generate_data_from_sbml(sbml_file, xinit, tinterv, params, opt_params,
                                       noise, noise_unit, pick)
     } else if (model_from == 'selected') { # generate data using predefined models
-        res = generate_data_selected_model(selected_model, xinit, tinterv, num_species, params,
+        res = generate_data_selected_model(selected_model, xinit, tinterv, num_species,
+                                           params, opt_params,
                                            noise, noise_unit, pick)
     }
     return(res)
@@ -339,7 +340,7 @@ load_sbml <- function(f) {
 
 }
 
-get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_model) {
+get_data_from_csv <- function(csv_file, sbml_file, params, opt_params, model_from, selected_model) {
 
     ext = tools::file_ext(csv_file)
     if (ext == 'csv') {
@@ -352,7 +353,7 @@ get_data_from_csv <- function(csv_file, sbml_file, params, model_from, selected_
     init_time = x[, 1]
     y_no = x[, 2:ncol(x)]
     # init_par = rep(c(0.1), length(params))
-    init_par = params
+    init_par = opt_params
 
     if (model_from == 'uploaded') { # extract from the SBML file
         res = get_ode_fun(sbml_file, params)
