@@ -20,12 +20,11 @@ Imports:
     reshape2 (>= 1.4.2),
     gridExtra (>= 2.3),
     mvtnorm (>= 1.0.6),
-    SBMLR,
-    KGode
+    KGode (>= 1.0.0),
+    SBMLR
 Depends:
     pracma (>= 2.0.7),
     pspline (>= 1.0.18)
 Remotes:
-    joewandy/SBMLR,
-    mu2013/KGode
+    joewandy/SBMLR
 RoxygenNote: 6.0.1
