@@ -1,14 +1,5 @@
 shiny::shinyServer(function(input, output, session) {
 
-    shiny::observeEvent(input$process, {
-        shiny::insertUI(
-            selector = "#add",
-            where = "afterEnd",
-            ui = shiny::textInput(paste0("txt", input$add),
-                           "Insert some text")
-        )
-    })
-
     values <- shiny::reactiveValues(
         model_from = NULL,
         data_from = NULL,
@@ -31,37 +22,36 @@ shiny::shinyServer(function(input, output, session) {
     })
 
     resetScreen = function(input, output) {
-        shiny::removeUI(selector = '#placeholderParams *', multiple=TRUE)
+        shiny::removeUI(selector = '#generateParams *', multiple=TRUE)
+        shiny::removeUI(selector = '#generateStates *', multiple=TRUE)
+        shiny::removeUI(selector = '#optimisationParams *', multiple=TRUE)
+        shiny::removeUI(selector = '#warpingPeriods *', multiple=TRUE)
     }
 
     showModel = function(input, output, res) {
 
         shinyjs::enable('csv_file')
         shinyjs::enable('generateBtn')
-        shiny::removeUI(selector = '#placeholderParams *', multiple=TRUE)
-        shiny::removeUI(selector = '#placeholderStates *', multiple=TRUE)
+        shiny::removeUI(selector = '#generateParams *', multiple=TRUE)
+        shiny::removeUI(selector = '#generateStates *', multiple=TRUE)
+        shiny::removeUI(selector = '#optimisationParams *', multiple=TRUE)
+        shiny::removeUI(selector = '#warpingPeriods *', multiple=TRUE)
         
-        insertUI(
-            selector = '#placeholderParams',
-            ui = shiny::fluidRow(
-                shiny::column(6, shiny::h5("Generating Data")),
-                shiny::column(6, shiny::h5("Optimisation"))
-            )
-        )
-
-        output$odeParameters = shiny::renderText({ paste(res$params, collapse=", " ) })
+        output$generateParamsTextOutput = shiny::renderText({ paste(res$params, collapse=", " ) })
+        output$optimisationParamsTextOutput = shiny::renderText({ paste(res$params, collapse=", " ) })
         for (i in 1:res$num_params) {
             param_val_id = paste0('param_val', i)
             opt_val_id = paste0('opt_val', i)
             param_val_label = res$params[i]
             insertUI(
-                selector = '#placeholderParams',
-                ui = shiny::fluidRow(
-                    shiny::column(6, numericInput(param_val_id, param_val_label, value=res$params_vals[i],
-                                            min=0, max=NA, step=0.1)),
-                    shiny::column(6, numericInput(opt_val_id, param_val_label, value=0.1,
-                                            min=0, max=NA, step=0.1))
-                )
+                selector = '#generateParams',
+                ui = numericInput(param_val_id, param_val_label, value=res$params_vals[i],
+                                            min=0, max=NA, step=0.1)
+            )
+            insertUI(
+                selector = '#optimisationParams',
+                ui = numericInput(opt_val_id, param_val_label, value=0.1,
+                                                  min=0, max=NA, step=0.1)
             )
         }
 
@@ -70,20 +60,22 @@ shiny::shinyServer(function(input, output, session) {
             init_cond_id = paste0('initial_cond', i)
             init_cond_label = paste0(res$species[i], " Initial Cond.")
             guess_id = paste0('p0_', i)
-            guess_label = 'Guess Period'
+            guess_label = paste0(res$species[i], " Guessing Period")
             shiny::insertUI(
-                selector = '#placeholderStates',
-                ui = shiny::fluidRow(
-                    column(6, shiny::numericInput(init_cond_id, init_cond_label, value=res$species_initial[i],
-                                           min=0, max=NA, step=0.1)),
-                    column(6, shiny::numericInput(guess_id, guess_label, value=res$peod[i],
-                                           min=0, max=NA, step=0.1))
-                )
+                selector = '#generateStates',
+                ui = shiny::numericInput(init_cond_id, init_cond_label, value=res$species_initial[i],
+                                           min=0, max=NA, step=0.1)
+            )
+            shiny::insertUI(
+                selector = '#warpingPeriods',
+                ui = shiny::numericInput(guess_id, guess_label, value=res$peod[i],
+                                                  min=0, max=NA, step=0.1)
             )
             labels = c(labels, res$species[i])
         }
-        output$systemStates = shiny::renderText({ paste(labels, collapse=", " ) })
-
+        output$generateStatesTextOutput = shiny::renderText({ paste(labels, collapse=", " ) })
+        output$warpingPeriodsTextOutput = shiny::renderText({ paste(labels, collapse=", " ) })
+        
         shiny::updateNumericInput(session, "time_points_min", value = res$tinterv[1])
         shiny::updateNumericInput(session, "time_points_max", value = res$tinterv[2])
         shiny::updateNumericInput(session, "time_points_pick", value = res$pick)
@@ -162,7 +154,7 @@ shiny::shinyServer(function(input, output, session) {
 
         model = getModelParameters()
 
-        shiny::updateTabsetPanel(session, "inTabset", selected="results")
+        # shiny::updateTabsetPanel(session, "inTabset", selected="results")
         output$generateDataPlot = shiny::renderPlot({
 
             plot_df = data.frame(y_no)
@@ -239,16 +231,6 @@ shiny::shinyServer(function(input, output, session) {
         set.seed(SEED)
 
         shinyjs::disable('inferBtn')
-        shinyjs::hide('generateDataPlot')
-        shinyjs::show('interpPlotInitial')
-        shinyjs::show('interpPlotInferred')
-        shinyjs::show('plot_ode')
-        shinyjs::show('downloadParamsBtn')
-        shinyjs::show('initialParams')
-        shinyjs::show('inferredParams')
-        shinyjs::show('diagnosticPlot')
-        shinyjs::show('warpingPlot')
-        shinyjs::show('console')
         shiny::updateTabsetPanel(session, "inTabset", selected="results")
 
         res = getData()
@@ -276,14 +258,18 @@ shiny::shinyServer(function(input, output, session) {
         # print(paste('method =', method))
 
         if (method == "gm") {
+            output$methodTextOutput = shiny::renderText("Method: gradient matching")
             infer_res = gradient_match(kkk, tinterv, y_no, input$ktype, progress)
         } else if (method == "gm+3rd") {
+            output$methodTextOutput = shiny::renderText("Method: gradient matching + ODE regularisation")
             infer_res = gradient_match_third_step(kkk, tinterv, y_no, input$ktype, progress)
         } else if (method == "warping") {
+            output$methodTextOutput = shiny::renderText("Method: gradient matching + warping")
             peod = getValues(input, 'p0_', nst, model$species)
             eps = input$eps
             infer_res = warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)
         } else if (method == "3rd+warping") {
+            output$methodTextOutput = shiny::renderText("Method: gradient matching + warping + ODE regularisation")
             peod = getValues(input, 'p0_', nst, model$species)
             eps = input$eps
             infer_res = third_step_warping(kkk, tinterv, y_no, peod, eps, input$ktype, progress)
@@ -316,10 +302,6 @@ shiny::shinyServer(function(input, output, session) {
             values$inferred_df
         }, rownames=T, digits=6)
 
-        # show/enable download and infer buttons
-        shinyjs::show("downloadParamsBtn")
-        shinyjs::enable("inferBtn")
-
         # set the download handler for the inferred parameters
         output$downloadParamsBtn <- shiny::downloadHandler(
             filename = function() { 'params.csv' },
@@ -340,6 +322,18 @@ shiny::shinyServer(function(input, output, session) {
         output$console = shiny::renderPrint({
             values$infer_res$output
         })
+        
+        shinyjs::show('interpPlotInitial')
+        shinyjs::show('interpPlotInferred')
+        shinyjs::show('plot_ode')
+        shinyjs::show('downloadParamsBtn')
+        shinyjs::show('initialParams')
+        shinyjs::show('inferredParams')
+        shinyjs::show('diagnosticPlot')
+        shinyjs::show('warpingPlot')
+        shinyjs::show('console')
+        shinyjs::show("downloadParamsBtn")
+        shinyjs::enable("inferBtn")
 
     })
 
