@@ -131,28 +131,6 @@ shiny::shinyUI(fluidPage(
                 value = "inference",
                 shiny::column(
                     3,
-                    shiny::h3("Warping Options"),
-                    shiny::helpText(
-                        "If warping is turned on, the guessing periods and the standard deviation of period will be used."
-                    ),
-                    shiny::radioButtons("warping", "Warping", c("Off" =
-                                                                    "off",
-                                                                "On" = "on"), inline = T),
-                    shiny::h5('Guessing periods for warping'),
-                    # shiny::verbatimTextOutput("warpingPeriodsTextOutput", placeholder = TRUE),
-                    shiny::tags$div(id = 'warpingPeriods'),
-                    shiny::br(),
-                    shiny::numericInput(
-                        'eps',
-                        'Standard deviation of period',
-                        value = 1,
-                        min = 0,
-                        max = NA,
-                        step = 0.1
-                    )
-                ),
-                shiny::column(
-                    3,
                     shiny::h3("Inference Parameters"),
                     shiny::helpText(
                         "Specify the kernel, the random seed, whether to use ODE regularisation, and the initial parameters for optimisation during inference."
@@ -176,7 +154,30 @@ shiny::shinyUI(fluidPage(
                     shiny::br(),
                     shiny::h5('Initial Parameters for Optimisation'),
                     # shiny::verbatimTextOutput("optimisationParamsTextOutput", placeholder = TRUE),
-                    shiny::tags$div(id = 'optimisationParams'),
+                    shiny::tags$div(id = 'optimisationParams')
+                ),
+                shiny::column(
+                    3,
+                    shiny::h3("Warping Options"),
+                    shiny::helpText(
+                        "If warping is turned on, the guessing periods and the standard deviation of period will be used."
+                    ),
+                    shiny::radioButtons("warping", "Warping", c("Off" =
+                                                                    "off",
+                                                                "On" = "on"), inline = T),
+                    shiny::h5('Guessing periods for warping'),
+                    # shiny::verbatimTextOutput("warpingPeriodsTextOutput", placeholder = TRUE),
+                    shiny::tags$div(id = 'warpingPeriods'),
+                    shiny::br(),
+                    shiny::numericInput(
+                        'eps',
+                        'Standard deviation of period',
+                        value = 1,
+                        min = 0,
+                        max = NA,
+                        step = 0.1
+                    ),
+                    shiny::hr(),
                     shinyjs::disabled(shiny::actionButton("inferBtn", "Infer"))
                 ),
                 shiny::column(
