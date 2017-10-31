@@ -9,6 +9,7 @@
 #' startShinyKGode()
 #' }
 #' @export
+#' @import pracma pspline
 startShinyKGode <- function() {
   shiny::runApp(appDir = system.file("application", package='shinyKGode'))
 }
