@@ -9,7 +9,7 @@ Description: Interactive shiny application to perform inference of non-linear
     Fitz hugh Nagumo, and Biopathway) pre-defined models are provided,
     and the user can also load her own model (in the Systems Biology Markup
     Language format) into the application.
-License: MIT + file LICENSE
+License: GPL-2
 Encoding: UTF-8
 LazyData: true
 Imports:
