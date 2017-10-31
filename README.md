@@ -32,3 +32,11 @@ Once installed, the application can be run by:
 library(shinyKGode)
 startShinyKGode()
 ```
+
+## Providing your own models
+
+User-defined models can be specified in the [SBML](https://en.wikipedia.org/wiki/SBML) format. For loading of SBML, `shinyKGode` relies on [a modified version of SBMLR](https://github.com/joewandy/sbmlr) (with some bugfixes), so only a subset of SBML file that can be parsed by [SBMLR](https://bioconductor.org/packages/release/bioc/html/SBMLR.html) is supported. Notably, this means only SBML v2 specifications is supported and not v3. Also, models exported from Copasi contains user-defined functions, which are also not supported by the parser. In this case, we suggest removing user-defined functions from the SBML file and putting them directly in the reaction section.
+
+Example SBML files for:
+- [The Lotka-Volterra model](inst/extdata/LotkaVolterra.xml)
+- [The FitzHugh–Nagumo model](inst/extdata/FHN.xml)
