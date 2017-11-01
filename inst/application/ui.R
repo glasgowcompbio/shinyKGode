@@ -122,7 +122,7 @@ shiny::shinyUI(fluidPage(
                 shiny::column(
                     6,
                     shiny::h3("Loaded/Generated Data"),
-                    shiny::plotOutput('generateDataPlot'),
+                    shiny::plotOutput('generateDataPlot', height='auto'),
                     shinyjs::hidden(shiny::downloadButton('downloadDataBtn', 'Download Data'))
                 )
             ),
@@ -185,9 +185,9 @@ shiny::shinyUI(fluidPage(
                     shiny::h3("Results"),
                     shiny::verbatimTextOutput("methodTextOutput"),
                     shiny::conditionalPanel(condition = "input.plot_ode == 'initial'",
-                                            shiny::plotOutput('interpPlotInitial')),
+                                            shiny::plotOutput('interpPlotInitial', height='auto')),
                     shiny::conditionalPanel(condition = "input.plot_ode == 'inferred'",
-                                            shiny::plotOutput('interpPlotInferred')),
+                                            shiny::plotOutput('interpPlotInferred', height='auto')),
                     shinyjs::hidden(radioButtons(
                         "plot_ode",
                         "Plot solved ODE using",

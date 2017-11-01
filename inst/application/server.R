@@ -229,8 +229,10 @@ shiny::shinyServer(function(input, output, session) {
                     ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0))
                 
             }
-            do.call(gridExtra::grid.arrange, pp)
+            gridExtra::grid.arrange(grobs=pp, ncol=1)
             
+        }, height=function() {
+            200 * model$num_species
         })
         
         shinyjs::enable("inferBtn")
@@ -385,8 +387,9 @@ shiny::shinyServer(function(input, output, session) {
         # }
         
         ### print diagnostic output
-        output$console = shiny::renderPrint({
-            values$infer_res$output
+        outputMsg = paste(values$infer_res$output, collapse='\n')
+        output$console = shiny::renderText({
+            outputMsg
         })
         
         shinyjs::show('interpPlotInitial')
@@ -491,11 +494,13 @@ shiny::shinyServer(function(input, output, session) {
                 pp[[i]] = g
                 
             }
-            do.call(gridExtra::grid.arrange, pp)
+            gridExtra::grid.arrange(grobs=pp, ncol=1)
             
-        }))
+        }, height=function() {
+            200 * length(species)
+        })
         
-    }
+    )}
     
     getDiagnosticPlot = function(res) {
         return(renderPlot({
