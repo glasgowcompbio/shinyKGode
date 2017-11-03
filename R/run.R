@@ -1,12 +1,13 @@
 #' Start ShinyKGode
-#' @title This function will start ShinyKGode
+#' @title This function will start ShinyKGode.
 #' @return Nothing
 #' @description An interactive Shiny application for running gradient matching to approximate ODEs.
-#' @details This starts the ShinyKGode application on the users local computer.
+#' @details This starts the ShinyKGode application on the user's local computer.
 #' @keywords ShinyKGode
-#' @examples
-#' \dontrun{
-#' startShinyKGode()
+#' @examples{
+#' if(interactive()){
+#'   startShinyKGode()
+#'   }
 #' }
 #' @export
 #' @import pracma pspline

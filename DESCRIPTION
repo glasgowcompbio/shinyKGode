@@ -7,7 +7,7 @@ Maintainer: Joe Wandy <joe.wandy@glasgow.ac.uk>
 Description: Interactive shiny application to perform inference of non-linear
     differential equations via gradient matching. Three (Lotka-Volterra,
     Fitz hugh Nagumo, and Biopathway) pre-defined models are provided,
-    and the user can also load her own model (in the Systems Biology Markup
+    and users can also load their own models (in the Systems Biology Markup
     Language format) into the application.
 License: GPL-2
 Encoding: UTF-8
