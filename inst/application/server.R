@@ -533,7 +533,7 @@ shiny::shinyServer(function(input, output, session) {
                 warpfun_y = res$warpfun_y[[i]]
                 warpfun_pred = res$warpfun_pred[[i]]
                 
-                title = 'Original'
+                title = 'Original Plot'
                 warp_df = as.data.frame(warpfun_x)
                 warp_df$intp = warpfun_pred
                 g1 = ggplot2::ggplot() +
@@ -550,7 +550,7 @@ shiny::shinyServer(function(input, output, session) {
                     ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
                     ggplot2::theme(plot.margin = ggplot2::unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
                 
-                title = paste('State', species[i], ' - Warp func.', sep =
+                title = paste('State', species[i], ' - Warping function', sep =
                                   ' ')
                 warp_df = as.data.frame(warpfun_x)
                 warp_df$warpfun_y = warpfun_y
@@ -568,7 +568,7 @@ shiny::shinyServer(function(input, output, session) {
                     ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0)) +
                     ggplot2::theme(plot.margin = ggplot2::unit(c(0.5, 0.5, 0.5, 0.5), "cm"))
                 
-                title = 'Warped'
+                title = 'Warped Plot'
                 warp_df = as.data.frame(warpfun_y)
                 warp_df$intp = warpfun_pred
                 g3 = ggplot2::ggplot() +
@@ -589,11 +589,13 @@ shiny::shinyServer(function(input, output, session) {
                 
             }
             
-            do.call(gridExtra::grid.arrange, pp)
+            gridExtra::grid.arrange(grobs=pp, ncol=1)
             
-        }))
+        }, height=function() {
+            200 * length(species)
+        })
         
-    }
+    )}
     
 })
 
@@ -776,7 +778,7 @@ BP_initial_values = function() {
     params_vals = c(0.07, 0.6, 0.05, 0.3, 0.017, 0.3)
     
     tinterv = c(0, 100)
-    pick = NA
+    pick = 2
     noise_var = 0.000289 # 0.017^2
     
     peod = c(200, 200, 200, 200, 200)   ## the guessing period for each state  user defined
@@ -876,60 +878,31 @@ generate_data_selected_model = function(selected_model,
                                         noise,
                                         noise_unit,
                                         pick) {
-    npar = length(params_vals)
     if (selected_model == "lv") {
-        kkk0 = KGode::ode$new(pick, fun = LV_fun, grfun = LV_grlNODE)
-        kkk0$solve_ode(params_vals, xinit, tinterv)
-        # init_par = rep(c(0.1), npar)
-        init_par = opt_params
-        init_yode = kkk0$y_ode
-        init_t = kkk0$t
-        kkk = KGode::ode$new(
-            1,
-            fun = LV_fun,
-            grfun = LV_grlNODE,
-            t = init_t,
-            ode_par = init_par,
-            y_ode = init_yode
-        )
-        
+        selected_fun = LV_fun
+        selected_grfun = LV_grlNODE
     } else if (selected_model == "fhg") {
-        kkk0 = KGode::ode$new(pick, fun = FN_fun, grfun = FN_grlNODE)
-        kkk0$solve_ode(params_vals, xinit, tinterv)
-        # init_par = rep(c(0.1), npar)
-        init_par = opt_params
-        init_yode = kkk0$y_ode
-        init_t = kkk0$t
-        kkk = KGode::ode$new(
-            1,
-            fun = FN_fun,
-            grfun = FN_grlNODE,
-            t = init_t,
-            ode_par = init_par,
-            y_ode = init_yode
-        )
-        
+        selected_fun = FN_fun
+        selected_grfun = FN_grlNODE
     } else if (selected_model == 'bp') {
-        kkk0 = KGode::ode$new(1, fun = BP_fun, grfun = BP_grlNODE)
-        kkk0$solve_ode(params_vals, xinit, tinterv)
-        start = 6
-        select = 2
-        ppick = c(1:(start - 1), seq(start, (length(kkk0$t) - 1), select), length(kkk0$t))
-        
-        # init_par = rep(c(0.1), npar)
-        init_par = opt_params
-        init_yode = kkk0$y_ode[, ppick]
-        init_t = kkk0$t[ppick]
-        kkk = KGode::ode$new(
-            1,
-            fun = BP_fun,
-            grfun = BP_grlNODE,
-            t = init_t,
-            ode_par = init_par,
-            y_ode = init_yode
-        )
-        
+        selected_fun = BP_fun
+        selected_grfun = BP_grlNODE
     }
+    kkk0 = KGode::ode$new(pick, fun=selected_fun, grfun=selected_grfun)
+    kkk0$solve_ode(params_vals, xinit, tinterv)
+    # npar = length(params_vals)
+    # init_par = rep(c(0.1), npar)
+    init_par = opt_params
+    init_yode = kkk0$y_ode
+    init_t = kkk0$t
+    kkk = KGode::ode$new(
+        1,
+        fun = selected_fun,
+        grfun = selected_grfun,
+        t = init_t,
+        ode_par = init_par,
+        y_ode = init_yode
+    )
     
     if (noise_unit == 'var') {
         n_o = max(dim(kkk$y_ode))
@@ -1293,7 +1266,8 @@ gradient_match_third_step <-
         
         update_status(progress, 'Cross-validating', 'inc', 0.3)
         crtype = 'i'  ## two methods fro third step  'i' fast method means iterative and '3' for slow method means 3rd step
-        lam = c(1e-4, 1e-5)  ## we need to do cross validation for find the weighter parameter
+        # lam = c(1e-4, 1e-5)  ## we need to do cross validation for find the weighter parameter
+        lam = c(10, 1, 1e-1, 1e-2, 1e-4)
         lamil1 = KGode::crossv(lam, kkk, bbb, crtype, y_no)
         lambdai1 = lamil1[[1]]
         
@@ -1439,7 +1413,8 @@ third_step_warping <-
         woption = 'w'
         ####   warp   3rd
         crtype = 'i'
-        lam = c(1e-4, 1e-5)  ## we need to do cross validation for find the weighter parameter
+        # lam = c(1e-4, 1e-5)  ## we need to do cross validation for find the weighter parameter
+        lam = c(10, 1, 1e-1, 1e-2, 1e-4)
         
         update_status(progress, 'Cross-validating', 'inc', 0.75)
         output4 = capture.output(lamwil <-

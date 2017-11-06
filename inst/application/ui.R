@@ -214,7 +214,7 @@ shiny::shinyUI(fluidPage(
                 shiny::conditionalPanel(
                     condition = "input.warping == 'on'",
                     shiny::h5("Warping"),
-                    shiny::plotOutput('warpingPlot')
+                    shiny::plotOutput('warpingPlot', height='auto')
                 ),
                 shiny::h5("Console log"),
                 shinyjs::hidden(shiny::verbatimTextOutput("console"))
