@@ -33,7 +33,7 @@ library(devtools)
 install_github('joewandy/shinyKGode')
 ```
 
-While the stable R package **(under submission)** can be installed from CRAN via `install.packages('shinyKGode')`.
+While the stable R package can be installed from CRAN via `install.packages('shinyKGode')`.
 
 ## Running shinyKGode
 
