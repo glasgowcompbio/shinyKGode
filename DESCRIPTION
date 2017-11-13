@@ -1,15 +1,14 @@
 Package: shinyKGode
 Type: Package
-Title: A Shiny User Interface of Time Warping for Improved Gradient Matching
+Title: An Interactive Application for ODE Parameter Inference Using Gradient Matching
 Version: 1.0.0
 Author: Joe Wandy
 Maintainer: Joe Wandy <joe.wandy@glasgow.ac.uk>
-Description: Interactive shiny application to perform inference of non-linear
-    differential equations via gradient matching. Three (Lotka-Volterra,
-    Fitz hugh Nagumo, and Biopathway) pre-defined models are provided,
-    and users can also load their own models (in the Systems Biology Markup
-    Language format) into the application.
+Description: An interactive Shiny application to perform fast parameter inference on 
+    dynamical systems (described by ordinary differential equations) using gradient matching. 
+    Please see the project page for more details.
 License: GPL-2
+URL: https://github.com/joewandy/shinyKGode
 Encoding: UTF-8
 LazyData: true
 Imports:
