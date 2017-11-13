@@ -2,7 +2,7 @@
 % Please edit documentation in R/run.R
 \name{startShinyKGode}
 \alias{startShinyKGode}
-\title{This function will start ShinyKGode}
+\title{This function will start ShinyKGode.}
 \usage{
 startShinyKGode()
 }
@@ -15,11 +15,13 @@ An interactive Shiny application for running gradient matching to approximate OD
 \details{
 Start ShinyKGode
 
-This starts the ShinyKGode application on the users local computer.
+This starts the ShinyKGode application on the user's local computer.
 }
 \examples{
-\dontrun{
-startShinyKGode()
+{
+if(interactive()){
+  startShinyKGode()
+  }
 }
 }
 \keyword{ShinyKGode}

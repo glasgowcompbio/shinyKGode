@@ -1,9 +1,10 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
-- Corrected the grammar issue in the DESCRIPTION file.
-- Make sure that interactive examples can be run.
+- Correctly regenerated new Rd-files using roxygen to make sure that interactive examples can be run.
 - Updated README.md.
+
+Thanks a lot to Swetlana for your help!! :)
 
 ## Test environments
 * local OS X install, R 3.4.2
