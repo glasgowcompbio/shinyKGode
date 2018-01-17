@@ -220,7 +220,7 @@ shiny::shinyServer(function(input, output, session) {
                 pp[[i]] = ggplot2::ggplot(data = plot_df, ggplot2::aes(x =
                                                                            time, y = value)) +
                     ggplot2::geom_point(data = subset(plot_df, state == species),
-                                        color = "red") +
+                                        color = "red", size = 2) +
                     ggplot2::ggtitle(title) +
                     ggplot2::xlab("Time") +
                     ggplot2::ylab("Value") +
@@ -260,6 +260,7 @@ shiny::shinyServer(function(input, output, session) {
         shinyjs::show('generateDataPlot')
         shinyjs::hide('interpPlotInitial')
         shinyjs::hide('interpPlotInferred')
+        shinyjs::hide('interpPlotInitialInferred')
         shinyjs::hide('plot_ode')
         shinyjs::hide('downloadParamsBtn')
         shinyjs::hide('initialParams')
@@ -349,23 +350,46 @@ shiny::shinyServer(function(input, output, session) {
         
         initial_df = data.frame(parameters = initial_params)
         inferred_df = data.frame(parameters = inferred_params)
+        colnames(initial_df) = 'initial'
+        colnames(inferred_df) = 'inferred'
+        
         # rownames(inferred_df) = model$params
         values$initial_df = initial_df
         values$inferred_df = inferred_df
+        values$initial_inferred_df = cbind(initial_df, inferred_df)
         
         ### plot the interpolation fit ###
-        output$interpPlotInitial = get_interpolation_plot(values$infer_res, time, solved_initial, model$species)
+        output$interpPlotInitial = get_interpolation_plot(values$infer_res, 
+                                                          time, 
+                                                          solved_initial, 
+                                                          model$species,
+                                                          "dashed",
+                                                          "Solved (initial)",
+                                                          "grey")
         output$interpPlotInferred = get_interpolation_plot(values$infer_res,
                                                            time,
                                                            solved_inferred,
-                                                           model$species)
+                                                           model$species,
+                                                           "dotted",
+                                                           "Solved (inferred)",
+                                                           "green")
+        output$interpPlotInitialInferred = get_interpolation_plot_combined(
+            values$infer_res,
+            time, 
+            solved_initial, 
+            solved_inferred,
+            model$species
+        )
         
         ### show the tables of initial & inferred parameters ###
+        output$inferredParams = shiny::renderTable({
+            values$inferred_df
+        }, rownames = T, digits = 6)
         output$initialParams = shiny::renderTable({
             values$initial_df
         }, rownames = T, digits = 6)
-        output$inferredParams = shiny::renderTable({
-            values$inferred_df
+        output$initialInferredParams = shiny::renderTable({
+            values$initial_inferred_df
         }, rownames = T, digits = 6)
         
         # set the download handler for the inferred parameters
@@ -394,6 +418,7 @@ shiny::shinyServer(function(input, output, session) {
         
         shinyjs::show('interpPlotInitial')
         shinyjs::show('interpPlotInferred')
+        shinyjs::show('interpPlotInitialInferred')
         shinyjs::show('plot_ode')
         shinyjs::show('downloadParamsBtn')
         shinyjs::show('initialParams')
@@ -407,10 +432,13 @@ shiny::shinyServer(function(input, output, session) {
         
     })
     
-    get_interpolation_plot = function(res, time, solved, species) {
+    get_interpolation_plot = function(res, time, solved, species, linetype, label, color) {
         return(shiny::renderPlot({
+
             solved_yode = solved$y_ode
             solved_t = solved$t
+            marker_size = 2
+
             pp = list()
             for (i in 1:res$nst) {
                 intp_x = res$intp_x[[i]]
@@ -453,7 +481,7 @@ shiny::shinyServer(function(input, output, session) {
                                             x = time,
                                             y = value,
                                             colour = 'c1'
-                                        )) +
+                                        ), size = marker_size) +
                     ggplot2::geom_line(
                         data = temp1,
                         ggplot2::aes(
@@ -461,7 +489,7 @@ shiny::shinyServer(function(input, output, session) {
                             y = value,
                             colour = 'c2'
                         ),
-                        size = 1
+                        size = marker_size
                     ) +
                     ggplot2::geom_line(
                         data = temp3,
@@ -470,8 +498,8 @@ shiny::shinyServer(function(input, output, session) {
                             y = value,
                             colour = 'c3'
                         ),
-                        size = 1,
-                        linetype = "dashed"
+                        size = marker_size,
+                        linetype = linetype
                     ) +
                     ggplot2::ggtitle(title) +
                     ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size =
@@ -481,12 +509,12 @@ shiny::shinyServer(function(input, output, session) {
                         values = c(
                             c1 = "red",
                             c2 = "blue",
-                            c3 = "grey"
+                            c3 = color
                         ),
                         labels = c(
                             c1 = "Observed",
                             c2 = "Interpolated",
-                            c3 = "Solved"
+                            c3 = label
                         )
                     ) +
                     ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0))
@@ -501,7 +529,131 @@ shiny::shinyServer(function(input, output, session) {
         })
         
     )}
-    
+
+    get_interpolation_plot_combined = function(res, time, 
+                                               solved_initial, solved_inferred, 
+                                               species) {
+        return(shiny::renderPlot({
+            
+            solved_initial_yode = solved_initial$y_ode
+            solved_inferred_yode = solved_inferred$y_ode
+            solved_initial_t = solved_initial$t
+            solved_inferred_t = solved_inferred$t
+            marker_size = 2
+            
+            pp = list()
+            for (i in 1:res$nst) {
+                intp_x = res$intp_x[[i]]
+                intp_y = res$intp_y[[i]]
+                data_x = res$data_x[[i]]
+                data_y = res$data_y[[i]]
+                solved_initial_y = solved_initial_yode[i, ]
+                solved_inferred_y = solved_inferred_yode[i, ]
+                solved_initial_x = solved_initial_t
+                solved_inferred_x = solved_inferred_t
+                
+                time = intp_x
+                plot_df1 = data.frame(time)
+                plot_df1$interpolated = intp_y
+                plot_df1 = reshape2::melt(plot_df1,
+                                          id.vars = 'time',
+                                          variable.name = 'type')
+                
+                time = data_x
+                plot_df2 = data.frame(time)
+                plot_df2$observed = data_y
+                plot_df2 = reshape2::melt(plot_df2,
+                                          id.vars = 'time',
+                                          variable.name = 'type')
+                
+                time = solved_initial_x
+                plot_df3 = data.frame(time)
+                plot_df3$solved_initial = solved_initial_y
+                plot_df3 = reshape2::melt(plot_df3,
+                                          id.vars = 'time',
+                                          variable.name = 'type')
+
+                time = solved_inferred_x
+                plot_df4 = data.frame(time)
+                plot_df4$solved_inferred = solved_inferred_y
+                plot_df4 = reshape2::melt(plot_df4,
+                                          id.vars = 'time',
+                                          variable.name = 'type')
+                                
+                plot_df = rbind(plot_df1, plot_df2, plot_df3, plot_df4)
+                temp2 = subset(plot_df, type == 'observed')
+                temp1 = subset(plot_df, type == 'interpolated')
+                temp3 = subset(plot_df, type == 'solved_initial')
+                temp4 = subset(plot_df, type == 'solved_inferred')
+                
+                title = paste('State', species[i], sep = ' ')
+                g = ggplot2::ggplot() +
+                    ggplot2::geom_point(data = temp2,
+                                        ggplot2::aes(
+                                            x = time,
+                                            y = value,
+                                            colour = 'c1'
+                                        ), size = marker_size) +
+                    ggplot2::geom_line(
+                        data = temp1,
+                        ggplot2::aes(
+                            x = time,
+                            y = value,
+                            colour = 'c2'
+                        ),
+                        size = marker_size
+                    ) +
+                    ggplot2::geom_line(
+                        data = temp3,
+                        ggplot2::aes(
+                            x = time,
+                            y = value,
+                            colour = 'c3'
+                        ),
+                        size = marker_size,
+                        linetype = "dashed"
+                    ) +
+                    ggplot2::geom_line(
+                        data = temp4,
+                        ggplot2::aes(
+                            x = time,
+                            y = value,
+                            colour = 'c4'
+                        ),
+                        size = marker_size,
+                        linetype = "dotted"
+                    ) +
+                    ggplot2::ggtitle(title) +
+                    ggplot2::theme_bw() + ggplot2::theme(text = ggplot2::element_text(size =
+                                                                                          20)) +
+                    ggplot2::scale_colour_manual(
+                        name = "Legend",
+                        values = c(
+                            c1 = "red",
+                            c2 = "blue",
+                            c3 = "grey",
+                            c4 = "green"
+                        ),
+                        labels = c(
+                            c1 = "Observed",
+                            c2 = "Interpolated",
+                            c3 = "Solved (Initial)",
+                            c4 = "Solved (Inferred)"
+                        )
+                    ) +
+                    ggplot2::expand_limits(x = 0) + ggplot2::scale_x_continuous(expand = c(0, 0))
+                
+                pp[[i]] = g
+                
+            }
+            gridExtra::grid.arrange(grobs=pp, ncol=1)
+            
+        }, height=function() {
+            200 * length(species)
+        })
+        
+        )}
+        
     getDiagnosticPlot = function(res) {
         return(renderPlot({
             objectives = res$objectives

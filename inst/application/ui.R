@@ -184,25 +184,43 @@ shiny::shinyUI(fluidPage(
                     6,
                     shiny::h3("Results"),
                     shiny::verbatimTextOutput("methodTextOutput"),
-                    shiny::conditionalPanel(condition = "input.plot_ode == 'initial'",
+                    # show the initial parameter plot
+                    shiny::conditionalPanel(condition = "input.plot_ode_initial && !input.plot_ode_inferred",
                                             shiny::plotOutput('interpPlotInitial', height='auto')),
-                    shiny::conditionalPanel(condition = "input.plot_ode == 'inferred'",
+                    # show the inferred parameter plot
+                    shiny::conditionalPanel(condition = "!input.plot_ode_initial && input.plot_ode_inferred",
                                             shiny::plotOutput('interpPlotInferred', height='auto')),
-                    shinyjs::hidden(radioButtons(
-                        "plot_ode",
-                        "Plot solved ODE using",
-                        c(
-                            "Inferred parameters" = "inferred",
-                            "Initial parameters" = "initial"
-                        ),
-                        inline = T
-                    )),
-                    shiny::conditionalPanel(condition = "input.plot_ode == 'initial'",
-                                            shiny::tableOutput('initialParams')),
-                    shiny::conditionalPanel(condition = "input.plot_ode == 'inferred'",
-                                            shiny::tableOutput('inferredParams')),
+                    # show the combined plot
+                    shiny::conditionalPanel(condition = "input.plot_ode_initial && input.plot_ode_inferred",
+                                            shiny::plotOutput('interpPlotInitialInferred', height='auto')),
                     shinyjs::hidden(
-                        shiny::downloadButton('downloadParamsBtn', 'Download Inferred Parameters')
+                        shiny::tags$div(id="plot_ode",
+                            shiny::h5('Plot solved ODE using'),
+                            shiny::checkboxInput(
+                               "plot_ode_inferred", 
+                               "Inferred parameters", 
+                               TRUE
+                            ),
+                            shiny::checkboxInput(
+                               "plot_ode_initial", 
+                               "Initial parameters", 
+                               FALSE
+                            )
+                        )
+                    ),
+                    shiny::hr(),
+                    shiny::h5('ODE parameters'),
+                    shiny::conditionalPanel(condition = "input.plot_ode_initial && !input.plot_ode_inferred",
+                                            shiny::tableOutput('initialParams')
+                    ),
+                    shiny::conditionalPanel(condition = "!input.plot_ode_initial && input.plot_ode_inferred",
+                                            shiny::tableOutput('inferredParams')
+                    ),
+                    shiny::conditionalPanel(condition = "input.plot_ode_initial && input.plot_ode_inferred",
+                                            shiny::tableOutput('initialInferredParams')
+                    ),
+                    shiny::conditionalPanel(condition = "input.plot_ode_inferred",
+                                            shiny::downloadButton('downloadParamsBtn', 'Download Inferred Parameters')
                     )                    
                 )
             ),
