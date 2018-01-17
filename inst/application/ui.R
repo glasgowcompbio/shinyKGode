@@ -33,7 +33,7 @@ shiny::shinyUI(fluidPage(
                     shiny::hr(),
                     shiny::h3("Load Data"),
                     shiny::helpText((
-                        "Data should be in a CSV format with column headers. The first column is header is 'time', while other column headers are the individual states."
+                        "Data should be in a CSV format with column headers. The first column header is 'time', while other column headers are the individual states."
                     )
                     ),
                     shinyjs::disabled(shiny::fileInput(
