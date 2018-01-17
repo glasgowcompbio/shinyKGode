@@ -437,7 +437,7 @@ shiny::shinyServer(function(input, output, session) {
 
             solved_yode = solved$y_ode
             solved_t = solved$t
-            marker_size = 2
+            marker_size = 1
 
             pp = list()
             for (i in 1:res$nst) {
@@ -539,7 +539,7 @@ shiny::shinyServer(function(input, output, session) {
             solved_inferred_yode = solved_inferred$y_ode
             solved_initial_t = solved_initial$t
             solved_inferred_t = solved_inferred$t
-            marker_size = 2
+            marker_size = 1
             
             pp = list()
             for (i in 1:res$nst) {
