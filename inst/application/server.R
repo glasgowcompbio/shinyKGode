@@ -338,7 +338,7 @@ shiny::shinyServer(function(input, output, session) {
         initial_params = getValues(input, 'param_val', model$num_params, model$params)
         inferred_params = infer_res$ode_par
         names(inferred_params) = names(initial_params)
-        
+
         xinit = as.matrix(getValues(
             input,
             'initial_cond',
@@ -352,7 +352,16 @@ shiny::shinyServer(function(input, output, session) {
         inferred_df = data.frame(parameters = inferred_params)
         colnames(initial_df) = 'initial'
         colnames(inferred_df) = 'inferred'
-        
+
+        if (input$K > 0) {
+            quantiles = bootstrap(kkk, y_no, input$ktype, input$K, progress)
+            quantiles_df = data.frame(t(quantiles))
+            quantiles_df = data.frame(quantiles_df$X25, quantiles_df$X75)
+            colnames(quantiles_df) = c('lower_quartile', 'upper_quartile')
+            rownames(quantiles_df)= initial_params
+            inferred_df = cbind(inferred_df, quantiles_df)        
+        } 
+                
         # rownames(inferred_df) = model$params
         values$initial_df = initial_df
         values$inferred_df = inferred_df
@@ -1618,6 +1627,12 @@ third_step_warping <-
         
         
     }
+
+bootstrap <- function(kkk, y_no, ktype, K, progress) {
+    update_status(progress, 'Bootstrapping', 'start', 1)
+    output1 = capture.output(rkgres <- KGode::rkg(kkk, y_no, ktype, K=K))
+    return(rkgres$quartiles)
+}
 
 solve_ode = function(kkk, params, xinit, tinterv) {
     solved = kkk$solve_ode(par_ode = params, xinit, tinterv)

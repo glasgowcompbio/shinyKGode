@@ -3,7 +3,7 @@ shiny::shinyUI(fluidPage(
     
     # Application title
     # titlePanel(title=div(img(src="logo.png"), "Gradient Matching for ODE Inference")),
-    shiny::titlePanel("Gradient Matching for ODE Inference"),
+    shiny::titlePanel("ShinyKGode: An interactive web application for gradient matching methods."),
     
     shiny::fluidRow(shiny::column(
         12,
@@ -133,7 +133,9 @@ shiny::shinyUI(fluidPage(
                     3,
                     shiny::h3("Inference Parameters"),
                     shiny::helpText(
-                        "Specify the kernel, the random seed, whether to use ODE regularisation, and the initial parameters for optimisation during inference."
+                        "Specify the kernel, the random seed, 
+                        the number of bootstrap replicates (to estimate parameter uncertainty),
+                        whether to use ODE regularisation, and the initial parameters for optimisation during inference."
                     ),
                     shiny::selectInput('ktype', "Kernel", kernelChoices),
                     shiny::numericInput(
@@ -141,6 +143,14 @@ shiny::shinyUI(fluidPage(
                         "Random Seed",
                         value = SEED,
                         min = -1,
+                        max = NA,
+                        step = 1
+                    ),
+                    shiny::numericInput(
+                        "K",
+                        "No. of Bootstrap Replicates",
+                        value = 0,
+                        min = 0,
                         max = NA,
                         step = 1
                     ),
