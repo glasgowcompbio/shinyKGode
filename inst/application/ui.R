@@ -149,7 +149,7 @@ shiny::shinyUI(fluidPage(
                     shiny::numericInput(
                         "K",
                         "No. of Bootstrap Replicates",
-                        value = 0,
+                        value = 12,
                         min = 0,
                         max = NA,
                         step = 1
