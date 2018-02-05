@@ -4,6 +4,7 @@ This is a resubmission. In this version I have:
 - Added a bootstrap procedure to estimate parameter uncertainty.
 - Improved plots
 - Misc. small bugfixes
+- Fixed a broken link in the README file
 
 ## Test environments
 * local OS X install, R 3.4.2
