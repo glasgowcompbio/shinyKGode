@@ -3,7 +3,7 @@ shiny::shinyUI(fluidPage(
     
     # Application title
     # titlePanel(title=div(img(src="logo.png"), "Gradient Matching for ODE Inference")),
-    shiny::titlePanel("ShinyKGode: An interactive web application for gradient matching methods."),
+    shiny::titlePanel("Gradient Matching for ODE Inference"),
     
     shiny::fluidRow(shiny::column(
         12,
@@ -149,7 +149,7 @@ shiny::shinyUI(fluidPage(
                     shiny::numericInput(
                         "K",
                         "No. of Bootstrap Replicates",
-                        value = 12,
+                        value = 0,
                         min = 0,
                         max = NA,
                         step = 1
@@ -213,7 +213,7 @@ shiny::shinyUI(fluidPage(
                             ),
                             shiny::checkboxInput(
                                "plot_ode_initial", 
-                               "Initial parameters", 
+                               "True parameters", 
                                FALSE
                             )
                         )
