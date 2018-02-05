@@ -1,7 +1,7 @@
 Package: shinyKGode
 Type: Package
 Title: An Interactive Application for ODE Parameter Inference Using Gradient Matching
-Version: 1.0.2
+Version: 1.0.3
 Author: Joe Wandy
 Maintainer: Joe Wandy <joe.wandy@glasgow.ac.uk>
 Description: An interactive Shiny application to perform fast parameter inference on

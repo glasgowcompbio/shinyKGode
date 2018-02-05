@@ -1,8 +1,9 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
-- Updated the package title and description in DESCRIPTION to be more accurate.
-- Added url to the project page in the DESCRIPTION file.
+- Added a bootstrap procedure to estimate parameter uncertainty.
+- Improved plots
+- Misc. small bugfixes
 
 ## Test environments
 * local OS X install, R 3.4.2
