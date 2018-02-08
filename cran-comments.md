@@ -1,10 +1,12 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
-- Added a bootstrap procedure to estimate parameter uncertainty.
-- Improved plots
-- Misc. small bugfixes
-- Fixed a broken link in the README file
+- Updated the bootstrap procedure to compute the median absolute deviation, rather than the interquartile range.
+- Minor user interface changes to the bootstrap fields.
+
+I have read CRAN policies regarding rapid resubmissions, and I sincerely apologise for this (we need this for the paper). It won't happen again!
+
+I also wish the maintainers a very nice day, and I would like to show my appreciation for all the work you've done :)
 
 ## Test environments
 * local OS X install, R 3.4.2

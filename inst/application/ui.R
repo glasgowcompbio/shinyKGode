@@ -134,7 +134,7 @@ shiny::shinyUI(fluidPage(
                     shiny::h3("Inference Parameters"),
                     shiny::helpText(
                         "Specify the kernel, the random seed, 
-                        the number of bootstrap replicates (to estimate parameter uncertainty),
+                        whether to perform bootstrap procedure (to estimate parameter uncertainty),
                         whether to use ODE regularisation, and the initial parameters for optimisation during inference."
                     ),
                     shiny::selectInput('ktype', "Kernel", kernelChoices),
@@ -146,13 +146,23 @@ shiny::shinyUI(fluidPage(
                         max = NA,
                         step = 1
                     ),
-                    shiny::numericInput(
-                        "K",
-                        "No. of Bootstrap Replicates",
-                        value = 0,
-                        min = 0,
-                        max = NA,
-                        step = 1
+                    shiny::radioButtons(
+                        "do_bootstrap",
+                        "Bootstrap",
+                        c("Off" = "off",
+                          "On" = "on"),
+                        inline = T
+                    ),
+                    shiny::conditionalPanel(
+                        condition = "input.do_bootstrap == 'on'",
+                        shiny::numericInput(
+                            "K",
+                            "No. of Bootstrap Replicates",
+                            value = 12,
+                            min = 0,
+                            max = NA,
+                            step = 1
+                        )
                     ),
                     shiny::radioButtons(
                         "ode_reg",

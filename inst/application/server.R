@@ -353,15 +353,14 @@ shiny::shinyServer(function(input, output, session) {
         colnames(initial_df) = 'true'
         colnames(inferred_df) = 'inferred'
 
-        if (input$K > 0) {
-            update_status(progress, 'Bootstrapping', 'start', 1.0)
-            quantiles = bootstrap(kkk, y_no, input$ktype, input$K, infer_res$ode_par, infer_res$intp_data, infer_res$www)
+        if (input$do_bootstrap == 'on' && input$K > 0) {
+            update_status(progress, 'Bootstrapping', 'start', 0.9)
+            mads = bootstrap(kkk, y_no, input$ktype, input$K, infer_res$ode_par, infer_res$intp_data, infer_res$www)
             update_status(progress, 'Bootstrapping', 'inc', 1.0)
-            quantiles_df = data.frame(t(quantiles))
-            quantiles_df = data.frame(quantiles_df$X25, quantiles_df$X75)
-            colnames(quantiles_df) = c('lower_quartile', 'upper_quartile')
-            rownames(quantiles_df)= rownames(initial_df)
-            inferred_df = cbind(inferred_df, quantiles_df)        
+            mad_df = data.frame(mads)
+            colnames(mad_df) = 'uncertainty'
+            rownames(mad_df)= rownames(initial_df)
+            inferred_df = cbind(inferred_df, mad_df)        
         } 
                 
         # rownames(inferred_df) = model$params
@@ -1691,9 +1690,9 @@ bootstrap <- function(kkk, y_no, ktype, K, ode_par, intp_data, www) {
         ode_pars = rbind(ode_pars, new_ode_par)
     }
     
-    # compute interquartiles range
-    quartiles = apply(ode_pars, 2, quantile)
-    return(quartiles)
+    # compute median absolute standard deviation from the bootstrap replicates
+    mads = apply(ode_pars, 2, mad)
+    return(mads)
 }
 
 solve_ode = function(kkk, params, xinit, tinterv) {
