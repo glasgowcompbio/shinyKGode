@@ -358,7 +358,7 @@ shiny::shinyServer(function(input, output, session) {
             mads = bootstrap(kkk, y_no, input$ktype, input$K, infer_res$ode_par, infer_res$intp_data, infer_res$www)
             update_status(progress, 'Bootstrapping', 'inc', 1.0)
             mad_df = data.frame(mads)
-            colnames(mad_df) = 'uncertainty'
+            colnames(mad_df) = 'bootstrap_uncertainty'
             rownames(mad_df)= rownames(initial_df)
             inferred_df = cbind(inferred_df, mad_df)        
         } 
