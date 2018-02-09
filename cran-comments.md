@@ -3,6 +3,7 @@ This is a resubmission. In this version I have:
 
 - Updated the bootstrap procedure to compute the median absolute deviation, rather than the interquartile range.
 - Minor user interface changes to the bootstrap fields.
+- Removed 'tools' from Imports in the DESCRIPTION, as it is unused.
 
 I have read CRAN policies regarding rapid resubmissions, and I sincerely apologise for this (we need this for the paper). It won't happen again!
 
