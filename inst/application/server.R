@@ -1675,9 +1675,10 @@ bootstrap <- function(kkk, y_no, ktype, K, ode_par, intp_data, www) {
             intpl = c()
             gradl = c()
             nst = nrow(kkk$y_ode)
+            n_o = max(dim(kkk$y_ode))
             for( st in 1:nst) {
                 new_rbf= KGode::RBF$new(1)
-                wk = KGode::rkhs$new(resampled_data[st,], www$wtime[st,], rep(1,n_o), 1, new_rbf)
+                wk = KGode::rkhs$new(resampled_data[st,], www$wtime[st,], rep(1, n_o), 1, new_rbf)
                 wk$skcross(5)    
                 intpl = rbind(intp, wk$predict()$pred)
                 gradl = rbind(gradl, wk$predict()$grad*www$dtilda[st,])
