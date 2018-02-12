@@ -375,7 +375,7 @@ shiny::shinyServer(function(input, output, session) {
                                                           solved_initial, 
                                                           model$species,
                                                           "dashed",
-                                                          "Solved (initial)",
+                                                          "Solved (True)",
                                                           "grey",
                                                           marker_size)
         output$interpPlotInferred = get_interpolation_plot(values$infer_res,
@@ -383,7 +383,7 @@ shiny::shinyServer(function(input, output, session) {
                                                            solved_inferred,
                                                            model$species,
                                                            "dashed",
-                                                           "Solved (inferred)",
+                                                           "Solved (Inferred)",
                                                            "grey",
                                                            marker_size)
         output$interpPlotInitialInferred = get_interpolation_plot_combined(
@@ -412,7 +412,7 @@ shiny::shinyServer(function(input, output, session) {
                 'params.csv'
             },
             content = function(file) {
-                write.csv(values$inferred_df, file)
+                write.csv(values$initial_inferred_df, file)
             }
         )
         
@@ -643,13 +643,13 @@ shiny::shinyServer(function(input, output, session) {
                         values = c(
                             c1 = "red",
                             c2 = "blue",
-                            c3 = "grey",
-                            c4 = "purple"
+                            c3 = "purple",
+                            c4 = "grey"
                         ),
                         labels = c(
                             c1 = "Observed",
                             c2 = "Interpolated",
-                            c3 = "Solved (Initial)",
+                            c3 = "Solved (True)",
                             c4 = "Solved (Inferred)"
                         )
                     ) +

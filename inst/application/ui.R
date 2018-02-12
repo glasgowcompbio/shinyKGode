@@ -240,7 +240,7 @@ shiny::shinyUI(fluidPage(
                                             shiny::tableOutput('initialInferredParams')
                     ),
                     shiny::conditionalPanel(condition = "input.plot_ode_inferred",
-                                            shiny::downloadButton('downloadParamsBtn', 'Download Inferred Parameters')
+                                            shiny::downloadButton('downloadParamsBtn', 'Download Parameters')
                     )                    
                 )
             ),

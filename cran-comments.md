@@ -1,13 +1,9 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
-- Updated the bootstrap procedure to compute the median absolute deviation, rather than the interquartile range.
-- Minor user interface changes to the bootstrap fields.
-- Removed 'tools' from Imports in the DESCRIPTION, as it is unused.
-
-I have read CRAN policies regarding rapid resubmissions, and I sincerely apologise for this (we need this for the paper). It won't happen again!
-
-I also wish the maintainers a very nice day, and I would like to show my appreciation for all the work you've done :)
+- Fixed a bug with uninitialised variable that cause warping + bootstrap not to run.
+- Fixed inconsistent plot legend for the solved ODE with initial + inferred parameters
+- Returned the correct dataframe when downloading parameters
 
 ## Test environments
 * local OS X install, R 3.4.2
