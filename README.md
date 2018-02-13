@@ -46,8 +46,14 @@ startShinyKGode()
 
 ## Tutorial Videos
 
-The following are tutorial videos we have produced that demonstrate using the `shinyKGode` package, as well as its advanced features.
+### ODE Regularisation
+
+The following tutorial video demonstrates the benefits of using ODE regularisation when inferring parameters using gradient matching in the `shinyKGode` package.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/PnkukIqlh9s" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+### Warping
+
+The following tutorial video demonstrates how warping could be used to improve parameter estimation in the `shinyKGode` package.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/-szfpRwYMCw" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
