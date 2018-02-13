@@ -46,8 +46,8 @@ startShinyKGode()
 
 ## Tutorial Videos
 
-### ODE Regularisation
-
-The following video demonstrates the benefits of using ODE regularisation when inferring parameters using gradient matching in the `shinyKGode` package.
+The following are tutorial videos we have produced that demonstrate using the `shinyKGode` package, as well as its advanced features.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/PnkukIqlh9s" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/-szfpRwYMCw" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
