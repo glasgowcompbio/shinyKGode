@@ -50,10 +50,10 @@ startShinyKGode()
 
 The following tutorial video demonstrates the benefits of using ODE regularisation when inferring parameters using gradient matching in the `shinyKGode` package.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/PnkukIqlh9s" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/o5F-UGHH7P4" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
 ### Warping
 
 The following tutorial video demonstrates how warping could be used to improve parameter estimation in the `shinyKGode` package.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/-szfpRwYMCw" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Wn8nuFwtTJY" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
